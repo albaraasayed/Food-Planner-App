@@ -1,31 +1,32 @@
 package com.example.foodplannerapp.ui.details;
 
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebChromeClient;
+import android.webkit.WebView;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.foodplannerapp.R;
 import com.example.foodplannerapp.model.Meal;
-import com.google.android.material.button.MaterialButton;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 public class MealDetailsFragment extends Fragment {
 
     private ImageView detailMealImg;
     private TextView tvTitle, tvArea, tvInstructions;
-    private RecyclerView rvIngredients;
-    private MaterialButton btnWatchVideo;
-    // MVP: You would add Presenter here later to fetch by ID
+    private WebView webViewVideo;
+    private ImageButton btnBack, btnFavorite;
+    private FloatingActionButton fabPlan;
 
     @Nullable
     @Override
@@ -37,21 +38,29 @@ public class MealDetailsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // 1. Initialize Views
         detailMealImg = view.findViewById(R.id.detailMealImg);
         tvTitle = view.findViewById(R.id.tvMealTitle);
         tvArea = view.findViewById(R.id.tvMealArea);
         tvInstructions = view.findViewById(R.id.tvInstructions);
-        rvIngredients = view.findViewById(R.id.rvIngredients);
-        btnWatchVideo = view.findViewById(R.id.btnWatchVideo);
+        webViewVideo = view.findViewById(R.id.webViewVideo);
+        btnBack = view.findViewById(R.id.btnBack);
+        btnFavorite = view.findViewById(R.id.btnFavorite);
+        fabPlan = view.findViewById(R.id.fabPlan);
 
-        // 2. Setup Back Button
-        view.findViewById(R.id.toolbar).setOnClickListener(v -> requireActivity().onBackPressed());
+        btnBack.setOnClickListener(v -> requireActivity().onBackPressed());
 
-        // 3. Get Data (Assumes you passed the Meal object via SafeArgs or Bundle)
-        // For now, let's assume you passed the "Meal" object directly
+        btnFavorite.setOnClickListener(v -> {
+            Toast.makeText(getContext(), "Added to Favorites!", Toast.LENGTH_SHORT).show();
+            // TODO: Implement Room DB logic here
+        });
+
+        fabPlan.setOnClickListener(v -> {
+            // TODO: Open Dialog to select Day (Sat, Sun, etc.)
+            Toast.makeText(getContext(), "Open Weekly Planner Dialog", Toast.LENGTH_SHORT).show();
+        });
+
         if (getArguments() != null) {
-            Meal meal = (Meal) getArguments().getSerializable("meal_data"); // Make sure Meal implements Serializable
+            Meal meal = (Meal) getArguments().getSerializable("meal_data");
             if (meal != null) {
                 displayMeal(meal);
             }
@@ -64,17 +73,32 @@ public class MealDetailsFragment extends Fragment {
         tvInstructions.setText(meal.getInstructions());
         Glide.with(this).load(meal.getThumbUrl()).into(detailMealImg);
 
-        // Setup Video
-        btnWatchVideo.setOnClickListener(v -> {
-            // Ideally open a WebViewFragment or Intent
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(meal.getYoutubeUrl()));
-            startActivity(intent);
-        });
+        // --- VIDEO LOGIC ---
+        if (meal.getYoutubeUrl() != null && !meal.getYoutubeUrl().isEmpty()) {
+            String videoId = getVideoId(meal.getYoutubeUrl());
+            if (videoId != null) {
+                // ADDED: ?playsinline=1 to keep video inside the app
+                String embedUrl = "https://www.youtube.com/embed/" + videoId + "?playsinline=1";
 
-        // Setup Ingredients (This requires parsing the strIngredient1...20 fields)
-        // I'll show the logic to setup the adapter here.
-        // List<Ingredient> ingredients = parseIngredients(meal);
-        // IngredientsAdapter adapter = new IngredientsAdapter(getContext(), ingredients);
-        // rvIngredients.setAdapter(adapter);
+                // Configure WebView
+                webViewVideo.getSettings().setJavaScriptEnabled(true);
+
+                // --- FIX FOR ERROR 153 ---
+                webViewVideo.getSettings().setDomStorageEnabled(true);
+
+                webViewVideo.setWebChromeClient(new WebChromeClient());
+                webViewVideo.loadUrl(embedUrl);
+            }
+        } else {
+            webViewVideo.setVisibility(View.GONE);
+        }
+    }
+
+    private String getVideoId(String url) {
+        if (url.contains("v=")) {
+            int index = url.indexOf("v=");
+            return url.substring(index + 2);
+        }
+        return null;
     }
 }
