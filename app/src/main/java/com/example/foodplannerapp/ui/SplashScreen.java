@@ -19,11 +19,9 @@ import com.example.foodplannerapp.R;
 
 public class SplashScreen extends Fragment {
 
-    @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater,
+                             ViewGroup container, Bundle savedInstanceState) {
 
         View view = inflater.inflate(R.layout.fragment_splash_screen, container, false);
         LottieAnimationView lottie = view.findViewById(R.id.lottieSplash);
@@ -36,7 +34,6 @@ public class SplashScreen extends Fragment {
                         .navigate(R.id.action_splash_to_home);
             }
         }, 3000);
-
 
         return view;
     }
