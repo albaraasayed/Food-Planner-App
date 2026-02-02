@@ -15,8 +15,16 @@
     </fragment>
 
     <fragment
-        android:id="@+id/homeFragment"
+        android:id="@+id/authScreen"
         android:name="com.example.foodplannerapp.ui.AuthScreen"
+        android:label="AuthScreen" >
+        <action
+            android:id="@+id/action_auth_to_home"
+            app:destination="@id/homeFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/homeFragment"
+        android:name="com.example.foodplannerapp.ui.home.HomeScreen"
         android:label="Home" />
 
 </navigation>
