@@ -31,7 +31,7 @@ public class SplashScreen extends Fragment {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             if (isAdded()) {
                 NavHostFragment.findNavController(this)
-                        .navigate(R.id.action_splash_to_home);
+                        .navigate(R.id.action_splashScreen_to_onboarding);
             }
         }, 3000);
 
