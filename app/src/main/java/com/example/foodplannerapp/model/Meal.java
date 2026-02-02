@@ -2,7 +2,10 @@ package com.example.foodplannerapp.model;
 
 import com.google.gson.annotations.SerializedName;
 
-public class Meal {
+import java.io.Serializable; // Important: Implement Serializable to pass objects between fragments
+
+public class Meal implements Serializable {
+
     @SerializedName("idMeal")
     private String id;
 
@@ -11,6 +14,9 @@ public class Meal {
 
     @SerializedName("strArea")
     private String area;
+
+    @SerializedName("strCategory")
+    private String category;
 
     @SerializedName("strInstructions")
     private String instructions;
@@ -22,12 +28,12 @@ public class Meal {
     private String youtubeUrl;
 
 
-    public String getName() {
-        return name;
+    public String getCategory() {
+        return category;
     }
 
-    public String getThumbUrl() {
-        return thumbUrl;
+    public String getName() {
+        return name;
     }
 
     public String getArea() {
@@ -38,35 +44,11 @@ public class Meal {
         return instructions;
     }
 
+    public String getThumbUrl() {
+        return thumbUrl;
+    }
+
     public String getYoutubeUrl() {
         return youtubeUrl;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setArea(String area) {
-        this.area = area;
-    }
-
-    public void setInstructions(String instructions) {
-        this.instructions = instructions;
-    }
-
-    public void setThumbUrl(String thumbUrl) {
-        this.thumbUrl = thumbUrl;
-    }
-
-    public void setYoutubeUrl(String youtubeUrl) {
-        this.youtubeUrl = youtubeUrl;
     }
 }
