@@ -4,7 +4,6 @@ import com.example.foodplannerapp.model.CategoryResponse;
 import com.example.foodplannerapp.model.CountryResponse;
 import com.example.foodplannerapp.model.MealResponse;
 import com.example.foodplannerapp.network.MealService;
-import com.example.foodplannerapp.network.RetrofitClient;
 
 import io.reactivex.rxjava3.core.Single;
 
@@ -13,7 +12,6 @@ public class MealRepository {
     private static MealRepository instance = null;
     private final MealService mealService;
 
-    // Private constructor for Singleton
     private MealRepository(MealService mealService) {
         this.mealService = mealService;
     }
@@ -25,8 +23,6 @@ public class MealRepository {
         return instance;
     }
 
-    // --- Remote Data Calls ---
-
     public Single<MealResponse> getRandomMeal() {
         return mealService.getRandomMeal();
     }
@@ -36,8 +32,17 @@ public class MealRepository {
     }
 
     public Single<CountryResponse> getCountries() {
-        // Note: The API endpoint for countries is typically "list.php?a=list"
-        // Ensure your Retrofit interface has the correct @GET path
         return mealService.getCountries();
+    }
+
+    public Single<MealResponse> searchMeals(String query) {
+        return mealService.searchMeals(query);
+    }
+
+    public Single<MealResponse> filterByCategory(String category) {
+        return mealService.filterByCategory(category);
+    }
+    public Single<MealResponse> filterByArea(String area) {
+        return mealService.filterByArea(area);
     }
 }

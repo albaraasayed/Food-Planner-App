@@ -34,24 +34,26 @@ public class HomePresenter implements HomeContract.Presenter {
     }
 
     @Override
-    public void getCategoryList() {
-        repository.getCategories()
+    public void getSweetMeals() {
+        // "Sweet" -> Dessert Category
+        repository.filterByCategory("Dessert")
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
-                        response -> view.showCategories(response.getCategories()),
-                        error -> view.showError(error.getMessage())
+                        response -> view.showSweetMeals(response.getMeals()),
+                        error -> view.showError("Failed to load sweets")
                 );
     }
 
     @Override
-    public void getCountryList() {
-        repository.getCountries()
+    public void getSaltyMeals() {
+        // "Salty" -> Miscellaneous Category (Contains Poutine, Pizza, etc.)
+        repository.filterByCategory("Miscellaneous")
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
-                        response -> view.showCountries(response.getCountries()),
-                        error -> view.showError(error.getMessage())
+                        response -> view.showSaltyMeals(response.getMeals()),
+                        error -> view.showError("Failed to load salty meals")
                 );
     }
 }
