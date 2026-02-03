@@ -35,6 +35,28 @@
             app:destination="@id/homeFragment"
             app:popUpTo="@id/authScreen"
             app:popUpToInclusive="true" />
+
+        <action
+            android:id="@+id/action_authScreen_to_registerFragment"
+            app:destination="@id/registerFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/registerFragment"
+        android:name="com.example.foodplannerapp.ui.RegisterFragment"
+        android:label="Sign Up">
+
+        <action
+            android:id="@+id/action_register_to_login"
+            app:destination="@id/authScreen"
+            app:popUpTo="@id/authScreen"
+            app:popUpToInclusive="true" />
+
+        <action
+            android:id="@+id/action_register_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <fragment
@@ -49,7 +71,7 @@
     <fragment
         android:id="@+id/mealDetailsFragment"
         android:name="com.example.foodplannerapp.ui.details.MealDetailsFragment"
-        android:label="Meal Details" >
+        android:label="Meal Details">
         <argument
             android:name="meal_data"
             app:argType="com.example.foodplannerapp.model.Meal" />

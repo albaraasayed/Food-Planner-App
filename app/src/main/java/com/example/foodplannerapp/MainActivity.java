@@ -30,7 +30,8 @@ public class MainActivity extends AppCompatActivity {
         navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
             if (destination.getId() == R.id.splashScreen
                     || destination.getId() == R.id.authScreen
-                    || destination.getId() == R.id.onboardingFragment) {
+                    || destination.getId() == R.id.onboardingFragment
+                    || destination.getId() == R.id.registerFragment) {
                 bottomNav.setVisibility(View.GONE);
             } else {
                 bottomNav.setVisibility(View.VISIBLE);
