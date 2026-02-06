@@ -12,11 +12,18 @@ public class Ingredient {
     @SerializedName("strDescription")
     private String description;
 
-    public String getId() { return id; }
-    public String getName() { return name; }
-    public String getDescription() { return description; }
+    public String getId() {
+        return id;
+    }
 
-    // Helper to get Ingredient Image URL
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
     public String getThumbnail() {
         return "https://www.themealdb.com/images/ingredients/" + name + "-Small.png";
     }

@@ -1,23 +1,24 @@
 package com.example.foodplannerapp.ui.search;
 
-import com.example.foodplannerapp.data.MealRepository;
-
+import com.example.foodplannerapp.data.repository.MealRepositoryImpl;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class SearchPresenter implements SearchContract.Presenter {
-    private final SearchContract.View view;
-    private final MealRepository repository;
 
-    public SearchPresenter(SearchContract.View view, MealRepository repository) {
+    private final SearchContract.View view;
+    private final MealRepositoryImpl repository;
+
+    public SearchPresenter(SearchContract.View view, MealRepositoryImpl repository) {
         this.view = view;
         this.repository = repository;
     }
 
+    // --- SEARCH ---
     @Override
     public void searchMeals(String query) {
         view.showLoading();
-        repository.searchMeals(query) // Ensure this method exists in Repository
+        repository.searchMeals(query)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
@@ -32,6 +33,7 @@ public class SearchPresenter implements SearchContract.Presenter {
                 );
     }
 
+    // --- CATEGORIES ---
     @Override
     public void getCategories() {
         repository.getCategories()
@@ -46,7 +48,7 @@ public class SearchPresenter implements SearchContract.Presenter {
     @Override
     public void filterByCategory(String categoryName) {
         view.showLoading();
-        repository.filterByCategory(categoryName) // Ensure this method exists in Repository
+        repository.filterByCategory(categoryName)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
@@ -60,8 +62,8 @@ public class SearchPresenter implements SearchContract.Presenter {
                         }
                 );
     }
-    // ... inside SearchPresenter class ...
 
+    // --- COUNTRIES (CUISINES) ---
     @Override
     public void getCountries() {
         repository.getCountries()
@@ -77,6 +79,36 @@ public class SearchPresenter implements SearchContract.Presenter {
     public void filterByCountry(String countryName) {
         view.showLoading();
         repository.filterByArea(countryName)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        response -> {
+                            view.showSearchResults(response.getMeals());
+                            view.hideLoading();
+                        },
+                        error -> {
+                            view.showError(error.getMessage());
+                            view.hideLoading();
+                        }
+                );
+    }
+
+    // --- INGREDIENTS ---
+    @Override
+    public void getIngredients() {
+        repository.getIngredients()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        response -> view.showIngredients(response.getIngredients()),
+                        error -> view.showError(error.getMessage())
+                );
+    }
+
+    @Override
+    public void filterByIngredient(String ingredient) {
+        view.showLoading();
+        repository.filterByIngredient(ingredient)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(

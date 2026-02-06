@@ -1,14 +1,14 @@
 package com.example.foodplannerapp.ui.home;
 
-import com.example.foodplannerapp.data.MealRepository;
+import com.example.foodplannerapp.data.repository.MealRepositoryImpl;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class HomePresenter implements HomeContract.Presenter {
     private final HomeContract.View view;
-    private final MealRepository repository;
+    private final MealRepositoryImpl repository;
 
-    public HomePresenter(HomeContract.View view, MealRepository repository) {
+    public HomePresenter(HomeContract.View view, MealRepositoryImpl repository) {
         this.view = view;
         this.repository = repository;
     }

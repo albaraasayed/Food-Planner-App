@@ -2,23 +2,28 @@ package com.example.foodplannerapp.ui.search;
 
 import com.example.foodplannerapp.model.Category;
 import com.example.foodplannerapp.model.Country;
+import com.example.foodplannerapp.model.Ingredient;
 import com.example.foodplannerapp.model.Meal;
 
 import java.util.List;
 
 public interface SearchContract {
+
     interface View {
         void showLoading();
 
         void hideLoading();
 
+        void showError(String message);
+
+        // All "show" methods must be in this ONE interface
         void showSearchResults(List<Meal> meals);
 
         void showCategories(List<Category> categories);
 
-        void showCountries(List<Country> countries); // NEW
+        void showCountries(List<Country> countries);
 
-        void showError(String message);
+        void showIngredients(List<Ingredient> ingredients);
     }
 
     interface Presenter {
@@ -26,10 +31,14 @@ public interface SearchContract {
 
         void getCategories();
 
-        void getCountries(); // NEW
+        void getCountries();
+
+        void getIngredients();
 
         void filterByCategory(String categoryName);
 
-        void filterByCountry(String countryName); // NEW
+        void filterByCountry(String countryName);
+
+        void filterByIngredient(String ingredient);
     }
 }

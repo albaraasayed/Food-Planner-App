@@ -1,11 +1,10 @@
 package com.example.foodplannerapp.ui.details;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.WebChromeClient;
-import android.webkit.WebView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -14,19 +13,39 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.foodplannerapp.R;
+import com.example.foodplannerapp.data.config.RetrofitClient;
+import com.example.foodplannerapp.data.repository.MealRepositoryImpl;
+import com.example.foodplannerapp.model.Ingredient;
 import com.example.foodplannerapp.model.Meal;
+
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
+
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class MealDetailsFragment extends Fragment {
-
     private ImageView detailMealImg;
-    private TextView tvTitle, tvArea, tvInstructions;
-    private WebView webViewVideo;
-    private ImageButton btnBack, btnFavorite;
+    private TextView tvTitle, tvArea, tvCategory, tvInstructions;
+    private YouTubePlayerView youTubePlayerView;
+    private ImageButton btnBack;
     private FloatingActionButton fabPlan;
+    private RecyclerView rvIngredients;
+    private DetailsIngredientAdapter ingredientAdapter;
+    private MealRepositoryImpl repository;
 
     @Nullable
     @Override
@@ -38,67 +57,151 @@ public class MealDetailsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // Init Views
         detailMealImg = view.findViewById(R.id.detailMealImg);
         tvTitle = view.findViewById(R.id.tvMealTitle);
-        tvArea = view.findViewById(R.id.tvMealArea);
+        tvArea = view.findViewById(R.id.tvArea);
+        tvCategory = view.findViewById(R.id.tvCategory);
         tvInstructions = view.findViewById(R.id.tvInstructions);
-        webViewVideo = view.findViewById(R.id.webViewVideo);
+        youTubePlayerView = view.findViewById(R.id.youtube_player_view);
         btnBack = view.findViewById(R.id.btnBack);
-        btnFavorite = view.findViewById(R.id.btnFavorite);
         fabPlan = view.findViewById(R.id.fabPlan);
+        rvIngredients = view.findViewById(R.id.rvIngredients);
 
+        // Setup Adapter
+        ingredientAdapter = new DetailsIngredientAdapter();
+        rvIngredients.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+        rvIngredients.setAdapter(ingredientAdapter);
+
+        // Init Repository
+        repository = MealRepositoryImpl.getInstance(RetrofitClient.getService());
+
+        // Listeners
         btnBack.setOnClickListener(v -> requireActivity().onBackPressed());
+        fabPlan.setOnClickListener(v -> Toast.makeText(getContext(), "Weekly Planner", Toast.LENGTH_SHORT).show());
+        getLifecycle().addObserver(youTubePlayerView);
 
-        btnFavorite.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Added to Favorites!", Toast.LENGTH_SHORT).show();
-            // TODO: Implement Room DB logic here
-        });
-
-        fabPlan.setOnClickListener(v -> {
-            // TODO: Open Dialog to select Day (Sat, Sun, etc.)
-            Toast.makeText(getContext(), "Open Weekly Planner Dialog", Toast.LENGTH_SHORT).show();
-        });
-
+        // Load Data
         if (getArguments() != null) {
             Meal meal = (Meal) getArguments().getSerializable("meal_data");
             if (meal != null) {
-                displayMeal(meal);
+                // CHECK IF MEAL IS "LITE" (Missing instructions/ingredients)
+                if (meal.getInstructions() == null || meal.getInstructions().isEmpty()) {
+                    // It's a Lite meal -> Show what we have, then fetch the rest
+                    displayBasicInfo(meal);
+                    fetchFullMealDetails(meal.getId());
+                } else {
+                    // It's already a Full meal -> Display everything
+                    displayFullMeal(meal);
+                }
             }
         }
     }
 
-    private void displayMeal(Meal meal) {
+    private void fetchFullMealDetails(String mealId) {
+        // Show loading state if needed
+        repository.getMealDetails(mealId)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        response -> {
+                            if (response.getMeals() != null && !response.getMeals().isEmpty()) {
+                                displayFullMeal(response.getMeals().get(0));
+                            }
+                        },
+                        error -> Toast.makeText(getContext(), "Error loading details", Toast.LENGTH_SHORT).show()
+                );
+    }
+
+    private void displayBasicInfo(Meal meal) {
         tvTitle.setText(meal.getName());
-        tvArea.setText(meal.getArea() + "  •  " + meal.getCategory());
+        Glide.with(this).load(meal.getThumbUrl()).into(detailMealImg);
+        // Hide empty fields for now
+        tvInstructions.setText("Loading...");
+        tvArea.setText("");
+        tvCategory.setText("");
+    }
+
+    private void displayFullMeal(Meal meal) {
+        tvTitle.setText(meal.getName());
+        tvArea.setText(meal.getArea());
+        tvCategory.setText(meal.getCategory());
         tvInstructions.setText(meal.getInstructions());
         Glide.with(this).load(meal.getThumbUrl()).into(detailMealImg);
 
-        // --- VIDEO LOGIC ---
+        // Ingredients
+        List<Ingredient> ingredients = extractIngredients(meal);
+        ingredientAdapter.setList(ingredients);
+
+        // YouTube
         if (meal.getYoutubeUrl() != null && !meal.getYoutubeUrl().isEmpty()) {
             String videoId = getVideoId(meal.getYoutubeUrl());
             if (videoId != null) {
-                // ADDED: ?playsinline=1 to keep video inside the app
-                String embedUrl = "https://www.youtube.com/embed/" + videoId + "?playsinline=1";
-
-                // Configure WebView
-                webViewVideo.getSettings().setJavaScriptEnabled(true);
-
-                // --- FIX FOR ERROR 153 ---
-                webViewVideo.getSettings().setDomStorageEnabled(true);
-
-                webViewVideo.setWebChromeClient(new WebChromeClient());
-                webViewVideo.loadUrl(embedUrl);
+                youTubePlayerView.setVisibility(View.VISIBLE);
+                youTubePlayerView.initialize(new AbstractYouTubePlayerListener() {
+                    @Override
+                    public void onReady(@NonNull YouTubePlayer youTubePlayer) {
+                        youTubePlayer.cueVideo(videoId, 0);
+                    }
+                });
             }
         } else {
-            webViewVideo.setVisibility(View.GONE);
+            youTubePlayerView.setVisibility(View.GONE);
         }
     }
 
-    private String getVideoId(String url) {
-        if (url.contains("v=")) {
-            int index = url.indexOf("v=");
-            return url.substring(index + 2);
+    // --- Helpers (Same as before) ---
+
+    private List<Ingredient> extractIngredients(Meal meal) {
+        List<Ingredient> ingredientsList = new ArrayList<>();
+        for (int i = 1; i <= 20; i++) {
+            try {
+                Method ingredientMethod = meal.getClass().getMethod("getStrIngredient" + i);
+                Method measureMethod = meal.getClass().getMethod("getStrMeasure" + i);
+                Object ingredientObj = ingredientMethod.invoke(meal);
+                Object measureObj = measureMethod.invoke(meal);
+
+                String ingredientName = (ingredientObj != null) ? ingredientObj.toString().trim() : "";
+                String measure = (measureObj != null) ? measureObj.toString().trim() : "";
+
+                if (!ingredientName.isEmpty()) {
+                    Ingredient ingredient = new Ingredient();
+                    // Manually setting name since we don't have a specific setter in the model shared
+                    // Using Reflection to be safe, or assume setStrIngredient exists
+                    try {
+                        Method setName = ingredient.getClass().getMethod("setStrIngredient", String.class);
+                        setName.invoke(ingredient, ingredientName + "\n" + measure);
+                    } catch (Exception e) {
+                        // Fallback if model uses 'setName'
+                        Method setName = ingredient.getClass().getMethod("setName", String.class);
+                        setName.invoke(ingredient, ingredientName + "\n" + measure);
+                    }
+                    ingredientsList.add(ingredient);
+                }
+            } catch (Exception e) {
+                // Ignore empty fields
+            }
         }
-        return null;
+        return ingredientsList;
+    }
+
+    private String getVideoId(String url) {
+        String videoId = null;
+        if (url != null && url.trim().length() > 0) {
+            String expression = "^.*(youtu.be\\/|v\\/|u\\/\\w\\/|embed\\/|watch\\?v=|&v=)([^#&?]*).*";
+            Pattern pattern = Pattern.compile(expression);
+            Matcher matcher = pattern.matcher(url);
+            if (matcher.find()) {
+                String group = matcher.group(2);
+                if (group != null && group.length() == 11) videoId = group;
+            }
+        }
+        return videoId;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (youTubePlayerView != null) youTubePlayerView.release();
     }
 }

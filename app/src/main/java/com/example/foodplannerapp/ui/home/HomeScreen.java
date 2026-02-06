@@ -19,9 +19,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.foodplannerapp.R;
-import com.example.foodplannerapp.data.MealRepository;
+import com.example.foodplannerapp.data.repository.MealRepositoryImpl;
 import com.example.foodplannerapp.model.Meal;
-import com.example.foodplannerapp.network.RetrofitClient;
+import com.example.foodplannerapp.data.config.RetrofitClient;
 
 import java.util.List;
 
@@ -66,7 +66,7 @@ public class HomeScreen extends Fragment implements HomeContract.View {
         rvSalty.setAdapter(saltyAdapter);
 
         // 3. Presenter
-        presenter = new HomePresenter(this, MealRepository.getInstance(RetrofitClient.getService()));
+        presenter = new HomePresenter(this, MealRepositoryImpl.getInstance(RetrofitClient.getService()));
         presenter.getDailyInspiration();
         presenter.getSweetMeals();
         presenter.getSaltyMeals();

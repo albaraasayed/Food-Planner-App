@@ -28,6 +28,10 @@ public class Meal implements Serializable {
     private String youtubeUrl;
 
 
+    public String getId() {
+        return id;
+    }
+
     public String getCategory() {
         return category;
     }

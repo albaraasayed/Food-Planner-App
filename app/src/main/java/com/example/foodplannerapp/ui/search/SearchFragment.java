@@ -17,11 +17,12 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.foodplannerapp.R;
-import com.example.foodplannerapp.data.MealRepository;
+import com.example.foodplannerapp.data.repository.MealRepositoryImpl;
 import com.example.foodplannerapp.model.Category;
 import com.example.foodplannerapp.model.Country;
+import com.example.foodplannerapp.model.Ingredient;
 import com.example.foodplannerapp.model.Meal;
-import com.example.foodplannerapp.network.RetrofitClient;
+import com.example.foodplannerapp.data.config.RetrofitClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,12 +32,14 @@ public class SearchFragment extends Fragment implements SearchContract.View {
     private SearchPresenter presenter;
     private SearchMealsAdapter mealsAdapter;
     private CategoryChipAdapter chipAdapter;
-    private CountryChipAdapter countryAdapter; // Adapter for Countries
+    private CountryChipAdapter countryAdapter;
+    private IngredientChipAdapter ingredientAdapter;
     private ProgressBar progressBar;
     private SearchView searchView;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // Ensure fragment_search.xml exists and has all IDs
         return inflater.inflate(R.layout.fragment_search, container, false);
     }
 
@@ -44,12 +47,13 @@ public class SearchFragment extends Fragment implements SearchContract.View {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // 1. Init Views
+        // 1. Initialize Views
         progressBar = view.findViewById(R.id.progressBar);
         searchView = view.findViewById(R.id.searchView);
         RecyclerView rvSearchResults = view.findViewById(R.id.rvSearchResults);
         RecyclerView rvCategoryChips = view.findViewById(R.id.rvCategoryChips);
-        RecyclerView rvCountryChips = view.findViewById(R.id.rvCountryChips); // Ensure this ID exists in XML
+        RecyclerView rvCountryChips = view.findViewById(R.id.rvCountryChips);
+        RecyclerView rvIngredientChips = view.findViewById(R.id.rvIngredientChips);
 
         // 2. Setup Meal Grid Adapter
         mealsAdapter = new SearchMealsAdapter(meal -> {
@@ -60,27 +64,29 @@ public class SearchFragment extends Fragment implements SearchContract.View {
         rvSearchResults.setLayoutManager(new GridLayoutManager(getContext(), 2));
         rvSearchResults.setAdapter(mealsAdapter);
 
-        // 3. Setup Category Chip Adapter
-        chipAdapter = new CategoryChipAdapter(categoryName -> {
-            presenter.filterByCategory(categoryName);
-        });
+        // 3. Setup Category Adapter
+        chipAdapter = new CategoryChipAdapter(categoryName -> presenter.filterByCategory(categoryName));
         rvCategoryChips.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         rvCategoryChips.setAdapter(chipAdapter);
 
-        // 4. Setup Country Chip Adapter
-        countryAdapter = new CountryChipAdapter(countryName -> {
-            presenter.filterByCountry(countryName);
-        });
+        // 4. Setup Country Adapter
+        countryAdapter = new CountryChipAdapter(countryName -> presenter.filterByCountry(countryName));
         rvCountryChips.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         rvCountryChips.setAdapter(countryAdapter);
 
-        // 5. Initialize Presenter & Fetch Data
-        presenter = new SearchPresenter(this, MealRepository.getInstance(RetrofitClient.getService()));
-        presenter.getCategories();
-        presenter.getCountries(); // Fetch countries
-        presenter.searchMeals(""); // Initial load
+        // 5. Setup Ingredient Adapter
+        ingredientAdapter = new IngredientChipAdapter(ingredientName -> presenter.filterByIngredient(ingredientName));
+        rvIngredientChips.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
+        rvIngredientChips.setAdapter(ingredientAdapter);
 
-        // 6. Search Listener
+        // 6. Initialize Presenter and Fetch Data
+        presenter = new SearchPresenter(this, MealRepositoryImpl.getInstance(RetrofitClient.getService()));
+        presenter.getCategories();
+        presenter.getCountries();
+        presenter.getIngredients();
+        presenter.searchMeals(""); // Initial random/empty search
+
+        // 7. Search Bar Listener
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -95,16 +101,16 @@ public class SearchFragment extends Fragment implements SearchContract.View {
         });
     }
 
-    // --- SearchContract.View Implementation ---
+    // --- View Implementation Methods ---
 
     @Override
     public void showLoading() {
-        progressBar.setVisibility(View.VISIBLE);
+        if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
     }
 
     @Override
     public void hideLoading() {
-        progressBar.setVisibility(View.GONE);
+        if (progressBar != null) progressBar.setVisibility(View.GONE);
     }
 
     @Override
@@ -120,12 +126,18 @@ public class SearchFragment extends Fragment implements SearchContract.View {
 
     @Override
     public void showCountries(List<Country> countries) {
-        // This was the missing method causing the error!
         countryAdapter.setList(countries);
     }
 
     @Override
+    public void showIngredients(List<Ingredient> ingredients) {
+        ingredientAdapter.setList(ingredients);
+    }
+
+    @Override
     public void showError(String message) {
-        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        if (getContext() != null) {
+            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        }
     }
 }
