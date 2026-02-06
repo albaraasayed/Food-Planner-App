@@ -1,11 +1,18 @@
 package com.example.foodplannerapp.model;
 
+import androidx.annotation.NonNull;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+
 import com.google.gson.annotations.SerializedName;
 
-import java.io.Serializable; // Important: Implement Serializable to pass objects between fragments
+import java.io.Serializable;
 
+@Entity(tableName = "meals_table")
 public class Meal implements Serializable {
 
+    @PrimaryKey
+    @NonNull
     @SerializedName("idMeal")
     private String id;
 
@@ -27,29 +34,61 @@ public class Meal implements Serializable {
     @SerializedName("strYoutube")
     private String youtubeUrl;
 
+    // Default Constructor (Required for Room)
+    public Meal() {
+    }
+
+    // ... (Keep your existing Getters and Setters) ...
+    public void setId(@NonNull String id) {
+        this.id = id;
+    }
 
     public String getId() {
         return id;
     }
 
-    public String getCategory() {
-        return category;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getName() {
         return name;
     }
 
+    public void setArea(String area) {
+        this.area = area;
+    }
+
     public String getArea() {
         return area;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setInstructions(String instructions) {
+        this.instructions = instructions;
     }
 
     public String getInstructions() {
         return instructions;
     }
 
+    public void setThumbUrl(String thumbUrl) {
+        this.thumbUrl = thumbUrl;
+    }
+
     public String getThumbUrl() {
         return thumbUrl;
+    }
+
+    public void setYoutubeUrl(String youtubeUrl) {
+        this.youtubeUrl = youtubeUrl;
     }
 
     public String getYoutubeUrl() {

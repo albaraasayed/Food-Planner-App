@@ -1,6 +1,6 @@
 package com.example.foodplannerapp.data.config;
 
-import com.example.foodplannerapp.data.remote.MealService;
+import com.example.foodplannerapp.data.remote.service.MealService;
 
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory;

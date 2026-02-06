@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
     app:startDestination="@id/splashScreen">
 
@@ -87,7 +88,14 @@
     <fragment
         android:id="@+id/favoritesFragment"
         android:name="com.example.foodplannerapp.ui.favorites.FavoritesFragment"
-        android:label="Favorites" />
+        android:label="Favorites"
+        tools:layout="@layout/fragment_favorites">
+
+        <action
+            android:id="@+id/action_favorites_to_details"
+            app:destination="@id/mealDetailsFragment" />
+
+    </fragment>
 
     <fragment
         android:id="@+id/plannerFragment"

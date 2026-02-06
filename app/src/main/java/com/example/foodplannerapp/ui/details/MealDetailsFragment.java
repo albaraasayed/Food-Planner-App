@@ -19,10 +19,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.foodplannerapp.R;
 import com.example.foodplannerapp.data.config.RetrofitClient;
+import com.example.foodplannerapp.data.local.local_datasource_implementation.MealLocalDataSourceImpl;
+import com.example.foodplannerapp.data.remote.remote_datasource_implementation.MealRemoteDataSourceImpl;
 import com.example.foodplannerapp.data.repository.MealRepositoryImpl;
 import com.example.foodplannerapp.model.Ingredient;
 import com.example.foodplannerapp.model.Meal;
-
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
@@ -38,6 +39,7 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class MealDetailsFragment extends Fragment {
+
     private ImageView detailMealImg;
     private TextView tvTitle, tvArea, tvCategory, tvInstructions;
     private YouTubePlayerView youTubePlayerView;
@@ -57,7 +59,7 @@ public class MealDetailsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Init Views
+        // 1. Init Views
         detailMealImg = view.findViewById(R.id.detailMealImg);
         tvTitle = view.findViewById(R.id.tvMealTitle);
         tvArea = view.findViewById(R.id.tvArea);
@@ -68,30 +70,31 @@ public class MealDetailsFragment extends Fragment {
         fabPlan = view.findViewById(R.id.fabPlan);
         rvIngredients = view.findViewById(R.id.rvIngredients);
 
-        // Setup Adapter
+        // 2. Setup Adapter
         ingredientAdapter = new DetailsIngredientAdapter();
         rvIngredients.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         rvIngredients.setAdapter(ingredientAdapter);
 
-        // Init Repository
-        repository = MealRepositoryImpl.getInstance(RetrofitClient.getService());
+        // 3. Init Repository (Corrected for new Architecture)
+        repository = MealRepositoryImpl.getInstance(
+                MealRemoteDataSourceImpl.getInstance(RetrofitClient.getService()),
+                MealLocalDataSourceImpl.getInstance(getContext())
+        );
 
-        // Listeners
+        // 4. Listeners
         btnBack.setOnClickListener(v -> requireActivity().onBackPressed());
         fabPlan.setOnClickListener(v -> Toast.makeText(getContext(), "Weekly Planner", Toast.LENGTH_SHORT).show());
         getLifecycle().addObserver(youTubePlayerView);
 
-        // Load Data
+        // 5. Load Data
         if (getArguments() != null) {
             Meal meal = (Meal) getArguments().getSerializable("meal_data");
             if (meal != null) {
-                // CHECK IF MEAL IS "LITE" (Missing instructions/ingredients)
+                // Check if meal is "Lite" (Missing instructions)
                 if (meal.getInstructions() == null || meal.getInstructions().isEmpty()) {
-                    // It's a Lite meal -> Show what we have, then fetch the rest
                     displayBasicInfo(meal);
                     fetchFullMealDetails(meal.getId());
                 } else {
-                    // It's already a Full meal -> Display everything
                     displayFullMeal(meal);
                 }
             }
@@ -99,7 +102,6 @@ public class MealDetailsFragment extends Fragment {
     }
 
     private void fetchFullMealDetails(String mealId) {
-        // Show loading state if needed
         repository.getMealDetails(mealId)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -116,7 +118,6 @@ public class MealDetailsFragment extends Fragment {
     private void displayBasicInfo(Meal meal) {
         tvTitle.setText(meal.getName());
         Glide.with(this).load(meal.getThumbUrl()).into(detailMealImg);
-        // Hide empty fields for now
         tvInstructions.setText("Loading...");
         tvArea.setText("");
         tvCategory.setText("");
@@ -144,18 +145,19 @@ public class MealDetailsFragment extends Fragment {
                         youTubePlayer.cueVideo(videoId, 0);
                     }
                 });
+            } else {
+                youTubePlayerView.setVisibility(View.GONE);
             }
         } else {
             youTubePlayerView.setVisibility(View.GONE);
         }
     }
 
-    // --- Helpers (Same as before) ---
-
     private List<Ingredient> extractIngredients(Meal meal) {
         List<Ingredient> ingredientsList = new ArrayList<>();
         for (int i = 1; i <= 20; i++) {
             try {
+                // Reflection to get strIngredient1...20
                 Method ingredientMethod = meal.getClass().getMethod("getStrIngredient" + i);
                 Method measureMethod = meal.getClass().getMethod("getStrMeasure" + i);
                 Object ingredientObj = ingredientMethod.invoke(meal);
@@ -166,13 +168,11 @@ public class MealDetailsFragment extends Fragment {
 
                 if (!ingredientName.isEmpty()) {
                     Ingredient ingredient = new Ingredient();
-                    // Manually setting name since we don't have a specific setter in the model shared
-                    // Using Reflection to be safe, or assume setStrIngredient exists
+                    // Try setting name (Handling potential different setter names)
                     try {
                         Method setName = ingredient.getClass().getMethod("setStrIngredient", String.class);
                         setName.invoke(ingredient, ingredientName + "\n" + measure);
                     } catch (Exception e) {
-                        // Fallback if model uses 'setName'
                         Method setName = ingredient.getClass().getMethod("setName", String.class);
                         setName.invoke(ingredient, ingredientName + "\n" + measure);
                     }

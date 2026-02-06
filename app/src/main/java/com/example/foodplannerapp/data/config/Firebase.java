@@ -1,4 +1,4 @@
 package com.example.foodplannerapp.data.config;
 
-public class room_database {
+public class Firebase {
 }

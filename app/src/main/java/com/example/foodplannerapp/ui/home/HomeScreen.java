@@ -19,9 +19,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.foodplannerapp.R;
+import com.example.foodplannerapp.data.config.RetrofitClient;
+import com.example.foodplannerapp.data.local.local_datasource_implementation.MealLocalDataSourceImpl; // IMPORT THIS
+import com.example.foodplannerapp.data.remote.remote_datasource_implementation.MealRemoteDataSourceImpl;
 import com.example.foodplannerapp.data.repository.MealRepositoryImpl;
 import com.example.foodplannerapp.model.Meal;
-import com.example.foodplannerapp.data.config.RetrofitClient;
 
 import java.util.List;
 
@@ -32,9 +34,9 @@ public class HomeScreen extends Fragment implements HomeContract.View {
     private TextView tvMealName;
     private Button btnViewRecipe;
     private CardView cardMealOfDay;
-    private RecyclerView rvSweet, rvSalty; // Renamed
+    private RecyclerView rvSweet, rvSalty;
 
-    private HomeMealAdapter sweetAdapter, saltyAdapter; // Renamed
+    private HomeMealAdapter sweetAdapter, saltyAdapter;
     private Meal currentRandomMeal;
 
     @Override
@@ -52,7 +54,6 @@ public class HomeScreen extends Fragment implements HomeContract.View {
         btnViewRecipe = view.findViewById(R.id.btnViewRecipe);
         cardMealOfDay = view.findViewById(R.id.cardMealOfDay);
 
-        // NEW IDs
         rvSweet = view.findViewById(R.id.rvSweet);
         rvSalty = view.findViewById(R.id.rvSalty);
 
@@ -65,8 +66,14 @@ public class HomeScreen extends Fragment implements HomeContract.View {
         rvSalty.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         rvSalty.setAdapter(saltyAdapter);
 
-        // 3. Presenter
-        presenter = new HomePresenter(this, MealRepositoryImpl.getInstance(RetrofitClient.getService()));
+        // 3. Initialize Presenter with BOTH Remote and Local sources
+        presenter = new HomePresenter(this,
+                MealRepositoryImpl.getInstance(
+                        MealRemoteDataSourceImpl.getInstance(RetrofitClient.getService()),
+                        MealLocalDataSourceImpl.getInstance(getContext())
+                )
+        );
+
         presenter.getDailyInspiration();
         presenter.getSweetMeals();
         presenter.getSaltyMeals();
@@ -105,10 +112,12 @@ public class HomeScreen extends Fragment implements HomeContract.View {
     }
 
     @Override
-    public void showLoading() {}
+    public void showLoading() {
+    }
 
     @Override
-    public void hideLoading() {}
+    public void hideLoading() {
+    }
 
     @Override
     public void showError(String errorMsg) {

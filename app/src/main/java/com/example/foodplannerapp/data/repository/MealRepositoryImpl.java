@@ -1,71 +1,93 @@
 package com.example.foodplannerapp.data.repository;
 
-import com.example.foodplannerapp.data.remote.MealService;
+import com.example.foodplannerapp.data.local.local_datasource_interface.MealLocalDataSource;
+import com.example.foodplannerapp.data.remote.remote_datasource_interface.MealRemoteDataSource;
 import com.example.foodplannerapp.model.CategoryResponse;
 import com.example.foodplannerapp.model.CountryResponse;
 import com.example.foodplannerapp.model.IngredientResponse;
+import com.example.foodplannerapp.model.Meal;
 import com.example.foodplannerapp.model.MealResponse;
 
+import java.util.List;
+
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 
 public class MealRepositoryImpl implements MealRepository {
 
     private static MealRepositoryImpl instance = null;
-    private final MealService mealService;
+    private final MealRemoteDataSource remoteDataSource;
+    private final MealLocalDataSource localDataSource;
 
-    private MealRepositoryImpl(MealService mealService) {
-        this.mealService = mealService;
+    private MealRepositoryImpl(MealRemoteDataSource remoteDataSource, MealLocalDataSource localDataSource) {
+        this.remoteDataSource = remoteDataSource;
+        this.localDataSource = localDataSource;
     }
 
-    public static MealRepositoryImpl getInstance(MealService mealService) {
+    public static MealRepositoryImpl getInstance(MealRemoteDataSource remoteDataSource, MealLocalDataSource localDataSource) {
         if (instance == null) {
-            instance = new MealRepositoryImpl(mealService);
+            instance = new MealRepositoryImpl(remoteDataSource, localDataSource);
         }
         return instance;
     }
 
     @Override
     public Single<MealResponse> getRandomMeal() {
-        return mealService.getRandomMeal();
+        return remoteDataSource.getRandomMeal();
     }
 
     @Override
     public Single<CategoryResponse> getCategories() {
-        return mealService.getCategories();
+        return remoteDataSource.getCategories();
     }
 
     @Override
     public Single<CountryResponse> getCountries() {
-        return mealService.getCountries();
+        return remoteDataSource.getCountries();
     }
 
     @Override
     public Single<MealResponse> searchMeals(String query) {
-        return mealService.searchMeals(query);
+        return remoteDataSource.searchMeals(query);
     }
 
     @Override
     public Single<MealResponse> filterByCategory(String category) {
-        return mealService.filterByCategory(category);
+        return remoteDataSource.filterByCategory(category);
     }
 
     @Override
     public Single<MealResponse> filterByArea(String area) {
-        return mealService.filterByArea(area);
+        return remoteDataSource.filterByArea(area);
     }
 
     @Override
     public Single<IngredientResponse> getIngredients() {
-        return mealService.getIngredients();
+        return remoteDataSource.getIngredients();
     }
 
     @Override
     public Single<MealResponse> filterByIngredient(String ingredient) {
-        return mealService.filterByIngredient(ingredient);
+        return remoteDataSource.filterByIngredient(ingredient);
     }
 
     @Override
     public Single<MealResponse> getMealDetails(String id) {
-        return mealService.getMealDetails(id);
+        return remoteDataSource.getMealDetails(id);
+    }
+
+    @Override
+    public Completable addToFavorites(Meal meal) {
+        return localDataSource.insertFavorite(meal);
+    }
+
+    @Override
+    public Completable removeFromFavorites(Meal meal) {
+        return localDataSource.deleteFavorite(meal);
+    }
+
+    @Override
+    public Single<List<Meal>> getStoredFavorites() {
+        return localDataSource.getFavorites();
     }
 }
