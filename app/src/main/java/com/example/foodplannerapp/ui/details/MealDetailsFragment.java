@@ -1,7 +1,6 @@
 package com.example.foodplannerapp.ui.details;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +11,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -43,11 +43,14 @@ public class MealDetailsFragment extends Fragment {
     private ImageView detailMealImg;
     private TextView tvTitle, tvArea, tvCategory, tvInstructions;
     private YouTubePlayerView youTubePlayerView;
-    private ImageButton btnBack;
+    private ImageButton btnBack, btnFavorite; // Added btnFavorite
     private FloatingActionButton fabPlan;
     private RecyclerView rvIngredients;
     private DetailsIngredientAdapter ingredientAdapter;
     private MealRepositoryImpl repository;
+
+    private Meal currentMeal;
+    private boolean isFavorite = false;
 
     @Nullable
     @Override
@@ -67,6 +70,7 @@ public class MealDetailsFragment extends Fragment {
         tvInstructions = view.findViewById(R.id.tvInstructions);
         youTubePlayerView = view.findViewById(R.id.youtube_player_view);
         btnBack = view.findViewById(R.id.btnBack);
+        btnFavorite = view.findViewById(R.id.btnFavorite); // Bind View
         fabPlan = view.findViewById(R.id.fabPlan);
         rvIngredients = view.findViewById(R.id.rvIngredients);
 
@@ -75,7 +79,7 @@ public class MealDetailsFragment extends Fragment {
         rvIngredients.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         rvIngredients.setAdapter(ingredientAdapter);
 
-        // 3. Init Repository (Corrected for new Architecture)
+        // 3. Init Repository
         repository = MealRepositoryImpl.getInstance(
                 MealRemoteDataSourceImpl.getInstance(RetrofitClient.getService()),
                 MealLocalDataSourceImpl.getInstance(getContext())
@@ -86,20 +90,92 @@ public class MealDetailsFragment extends Fragment {
         fabPlan.setOnClickListener(v -> Toast.makeText(getContext(), "Weekly Planner", Toast.LENGTH_SHORT).show());
         getLifecycle().addObserver(youTubePlayerView);
 
-        // 5. Load Data
+        // 5. Handle Favorite Click
+        btnFavorite.setOnClickListener(v -> toggleFavorite());
+
+        // 6. Load Data
         if (getArguments() != null) {
-            Meal meal = (Meal) getArguments().getSerializable("meal_data");
-            if (meal != null) {
-                // Check if meal is "Lite" (Missing instructions)
-                if (meal.getInstructions() == null || meal.getInstructions().isEmpty()) {
-                    displayBasicInfo(meal);
-                    fetchFullMealDetails(meal.getId());
+            currentMeal = (Meal) getArguments().getSerializable("meal_data");
+            if (currentMeal != null) {
+                // Check if it is already a favorite
+                checkFavoriteStatus(currentMeal.getId());
+
+                // Check if "Lite" meal or Full meal
+                if (currentMeal.getInstructions() == null || currentMeal.getInstructions().isEmpty()) {
+                    displayBasicInfo(currentMeal);
+                    fetchFullMealDetails(currentMeal.getId());
                 } else {
-                    displayFullMeal(meal);
+                    displayFullMeal(currentMeal);
                 }
             }
         }
     }
+
+    // --- FAVORITE LOGIC ---
+
+    private void checkFavoriteStatus(String mealId) {
+        repository.getStoredFavorites()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        favorites -> {
+                            isFavorite = false;
+                            for (Meal m : favorites) {
+                                if (m.getId().equals(mealId)) {
+                                    isFavorite = true;
+                                    break;
+                                }
+                            }
+                            updateFavoriteIcon();
+                        },
+                        error -> {
+                        } // Ignore errors for check
+                );
+    }
+
+    private void toggleFavorite() {
+        if (currentMeal == null) return;
+
+        if (isFavorite) {
+            // Remove from DB
+            repository.removeFromFavorites(currentMeal)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(
+                            () -> {
+                                isFavorite = false;
+                                updateFavoriteIcon();
+                                Toast.makeText(getContext(), "Removed from Favorites", Toast.LENGTH_SHORT).show();
+                            },
+                            error -> Toast.makeText(getContext(), "Error removing", Toast.LENGTH_SHORT).show()
+                    );
+        } else {
+            // Add to DB
+            repository.addToFavorites(currentMeal)
+                    .subscribeOn(Schedulers.io())
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(
+                            () -> {
+                                isFavorite = true;
+                                updateFavoriteIcon();
+                                Toast.makeText(getContext(), "Added to Favorites", Toast.LENGTH_SHORT).show();
+                            },
+                            error -> Toast.makeText(getContext(), "Error adding", Toast.LENGTH_SHORT).show()
+                    );
+        }
+    }
+
+    private void updateFavoriteIcon() {
+        if (isFavorite) {
+            btnFavorite.setImageResource(R.drawable.ic_favorite);
+            btnFavorite.setColorFilter(ContextCompat.getColor(requireContext(), R.color.error_red));
+        } else {
+            btnFavorite.setImageResource(R.drawable.ic_favorite_boarder);
+            btnFavorite.setColorFilter(ContextCompat.getColor(requireContext(), R.color.black));
+        }
+    }
+
+    // --- EXISTING METHODS ---
 
     private void fetchFullMealDetails(String mealId) {
         repository.getMealDetails(mealId)
@@ -108,7 +184,8 @@ public class MealDetailsFragment extends Fragment {
                 .subscribe(
                         response -> {
                             if (response.getMeals() != null && !response.getMeals().isEmpty()) {
-                                displayFullMeal(response.getMeals().get(0));
+                                currentMeal = response.getMeals().get(0); // Update current meal object
+                                displayFullMeal(currentMeal);
                             }
                         },
                         error -> Toast.makeText(getContext(), "Error loading details", Toast.LENGTH_SHORT).show()
@@ -130,11 +207,9 @@ public class MealDetailsFragment extends Fragment {
         tvInstructions.setText(meal.getInstructions());
         Glide.with(this).load(meal.getThumbUrl()).into(detailMealImg);
 
-        // Ingredients
         List<Ingredient> ingredients = extractIngredients(meal);
         ingredientAdapter.setList(ingredients);
 
-        // YouTube
         if (meal.getYoutubeUrl() != null && !meal.getYoutubeUrl().isEmpty()) {
             String videoId = getVideoId(meal.getYoutubeUrl());
             if (videoId != null) {
@@ -157,7 +232,6 @@ public class MealDetailsFragment extends Fragment {
         List<Ingredient> ingredientsList = new ArrayList<>();
         for (int i = 1; i <= 20; i++) {
             try {
-                // Reflection to get strIngredient1...20
                 Method ingredientMethod = meal.getClass().getMethod("getStrIngredient" + i);
                 Method measureMethod = meal.getClass().getMethod("getStrMeasure" + i);
                 Object ingredientObj = ingredientMethod.invoke(meal);
@@ -168,7 +242,6 @@ public class MealDetailsFragment extends Fragment {
 
                 if (!ingredientName.isEmpty()) {
                     Ingredient ingredient = new Ingredient();
-                    // Try setting name (Handling potential different setter names)
                     try {
                         Method setName = ingredient.getClass().getMethod("setStrIngredient", String.class);
                         setName.invoke(ingredient, ingredientName + "\n" + measure);
@@ -179,7 +252,6 @@ public class MealDetailsFragment extends Fragment {
                     ingredientsList.add(ingredient);
                 }
             } catch (Exception e) {
-                // Ignore empty fields
             }
         }
         return ingredientsList;
