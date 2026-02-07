@@ -46,4 +46,6 @@
 
     <string name="title_weekly_plan">My Weekly Plan</string>
 
+    <string name="default_web_client_id">YOUR_COPIED_CLIENT_ID_HERE</string>
+
 </resources>
