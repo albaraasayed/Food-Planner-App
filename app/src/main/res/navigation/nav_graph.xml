@@ -79,7 +79,9 @@
         android:id="@+id/searchFragment"
         android:name="com.example.foodplannerapp.ui.search.SearchFragment"
         android:label="Search">
-
+        <action
+            android:id="@+id/action_search_to_details"
+            app:destination="@id/mealDetailsFragment" />
         <action
             android:id="@+id/action_searchFragment_to_mealDetailsFragment"
             app:destination="@id/mealDetailsFragment" />
@@ -90,21 +92,29 @@
         android:name="com.example.foodplannerapp.ui.favorites.FavoritesFragment"
         android:label="Favorites"
         tools:layout="@layout/fragment_favorites">
-
         <action
             android:id="@+id/action_favorites_to_details"
             app:destination="@id/mealDetailsFragment" />
-
     </fragment>
 
     <fragment
         android:id="@+id/plannerFragment"
         android:name="com.example.foodplannerapp.ui.planner.PlannerFragment"
-        android:label="Planner" />
+        android:label="Planner">
+        <action
+            android:id="@+id/action_planner_to_details"
+            app:destination="@id/mealDetailsFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/profileFragment"
         android:name="com.example.foodplannerapp.ui.profile.ProfileFragment"
-        android:label="Profile" />
+        android:label="Profile">
+        <action
+            android:id="@+id/action_profile_to_auth"
+            app:destination="@id/authScreen"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
+    </fragment>
 
 </navigation>
