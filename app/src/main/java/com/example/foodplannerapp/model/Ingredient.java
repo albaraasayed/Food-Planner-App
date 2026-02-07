@@ -12,6 +12,13 @@ public class Ingredient {
     @SerializedName("strDescription")
     private String description;
 
+    @SerializedName("strMeasure")
+    private String measure;
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getId() {
         return id;
     }

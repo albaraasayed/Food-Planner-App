@@ -54,10 +54,9 @@
                         android:layout_centerVertical="true"
                         android:layout_marginEnd="16dp"
                         android:background="@drawable/bg_circle_translucent"
-                        android:src="@drawable/ic_favorite_boarder"
+                        android:src="@drawable/ic_favorite_border"
                         app:tint="@color/white" />
                 </RelativeLayout>
-
             </androidx.appcompat.widget.Toolbar>
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>

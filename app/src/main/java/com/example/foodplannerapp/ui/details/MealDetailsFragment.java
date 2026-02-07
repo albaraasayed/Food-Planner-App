@@ -1,6 +1,7 @@
 package com.example.foodplannerapp.ui.details;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,8 +33,6 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTube
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -43,7 +42,7 @@ public class MealDetailsFragment extends Fragment {
     private ImageView detailMealImg;
     private TextView tvTitle, tvArea, tvCategory, tvInstructions;
     private YouTubePlayerView youTubePlayerView;
-    private ImageButton btnBack, btnFavorite; // Added btnFavorite
+    private ImageButton btnBack, btnFavorite;
     private FloatingActionButton fabPlan;
     private RecyclerView rvIngredients;
     private DetailsIngredientAdapter ingredientAdapter;
@@ -70,7 +69,7 @@ public class MealDetailsFragment extends Fragment {
         tvInstructions = view.findViewById(R.id.tvInstructions);
         youTubePlayerView = view.findViewById(R.id.youtube_player_view);
         btnBack = view.findViewById(R.id.btnBack);
-        btnFavorite = view.findViewById(R.id.btnFavorite); // Bind View
+        btnFavorite = view.findViewById(R.id.btnFavorite); // Should find it now
         fabPlan = view.findViewById(R.id.fabPlan);
         rvIngredients = view.findViewById(R.id.rvIngredients);
 
@@ -88,19 +87,18 @@ public class MealDetailsFragment extends Fragment {
         // 4. Listeners
         btnBack.setOnClickListener(v -> requireActivity().onBackPressed());
         fabPlan.setOnClickListener(v -> Toast.makeText(getContext(), "Weekly Planner", Toast.LENGTH_SHORT).show());
-        getLifecycle().addObserver(youTubePlayerView);
-
-        // 5. Handle Favorite Click
         btnFavorite.setOnClickListener(v -> toggleFavorite());
 
-        // 6. Load Data
+        getLifecycle().addObserver(youTubePlayerView);
+
+        // 5. Load Data
         if (getArguments() != null) {
             currentMeal = (Meal) getArguments().getSerializable("meal_data");
             if (currentMeal != null) {
-                // Check if it is already a favorite
+                // Check if favorite
                 checkFavoriteStatus(currentMeal.getId());
 
-                // Check if "Lite" meal or Full meal
+                // Check if Lite or Full
                 if (currentMeal.getInstructions() == null || currentMeal.getInstructions().isEmpty()) {
                     displayBasicInfo(currentMeal);
                     fetchFullMealDetails(currentMeal.getId());
@@ -128,8 +126,7 @@ public class MealDetailsFragment extends Fragment {
                             }
                             updateFavoriteIcon();
                         },
-                        error -> {
-                        } // Ignore errors for check
+                        error -> {}
                 );
     }
 
@@ -137,7 +134,7 @@ public class MealDetailsFragment extends Fragment {
         if (currentMeal == null) return;
 
         if (isFavorite) {
-            // Remove from DB
+            // Remove
             repository.removeFromFavorites(currentMeal)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
@@ -150,7 +147,7 @@ public class MealDetailsFragment extends Fragment {
                             error -> Toast.makeText(getContext(), "Error removing", Toast.LENGTH_SHORT).show()
                     );
         } else {
-            // Add to DB
+            // Add
             repository.addToFavorites(currentMeal)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
@@ -166,16 +163,17 @@ public class MealDetailsFragment extends Fragment {
     }
 
     private void updateFavoriteIcon() {
+        if (getContext() == null) return;
         if (isFavorite) {
             btnFavorite.setImageResource(R.drawable.ic_favorite);
             btnFavorite.setColorFilter(ContextCompat.getColor(requireContext(), R.color.error_red));
         } else {
-            btnFavorite.setImageResource(R.drawable.ic_favorite_boarder);
+            btnFavorite.setImageResource(R.drawable.ic_favorite_border);
             btnFavorite.setColorFilter(ContextCompat.getColor(requireContext(), R.color.black));
         }
     }
 
-    // --- EXISTING METHODS ---
+    // --- DATA LOADING & VIDEO ---
 
     private void fetchFullMealDetails(String mealId) {
         repository.getMealDetails(mealId)
@@ -184,8 +182,10 @@ public class MealDetailsFragment extends Fragment {
                 .subscribe(
                         response -> {
                             if (response.getMeals() != null && !response.getMeals().isEmpty()) {
-                                currentMeal = response.getMeals().get(0); // Update current meal object
+                                currentMeal = response.getMeals().get(0);
+                                Log.d("MealDetails", currentMeal.toString());
                                 displayFullMeal(currentMeal);
+                                checkFavoriteStatus(currentMeal.getId()); // Re-check after full load
                             }
                         },
                         error -> Toast.makeText(getContext(), "Error loading details", Toast.LENGTH_SHORT).show()
@@ -201,28 +201,28 @@ public class MealDetailsFragment extends Fragment {
     }
 
     private void displayFullMeal(Meal meal) {
+        Log.i("MealDetails", "displayFullMeal: "+meal.getStrIngredient1());
         tvTitle.setText(meal.getName());
         tvArea.setText(meal.getArea());
         tvCategory.setText(meal.getCategory());
         tvInstructions.setText(meal.getInstructions());
         Glide.with(this).load(meal.getThumbUrl()).into(detailMealImg);
 
+        // Set Ingredients
         List<Ingredient> ingredients = extractIngredients(meal);
+        Log.d("Ingredients", ingredients.toString());
         ingredientAdapter.setList(ingredients);
 
-        if (meal.getYoutubeUrl() != null && !meal.getYoutubeUrl().isEmpty()) {
-            String videoId = getVideoId(meal.getYoutubeUrl());
-            if (videoId != null) {
-                youTubePlayerView.setVisibility(View.VISIBLE);
-                youTubePlayerView.initialize(new AbstractYouTubePlayerListener() {
-                    @Override
-                    public void onReady(@NonNull YouTubePlayer youTubePlayer) {
-                        youTubePlayer.cueVideo(videoId, 0);
-                    }
-                });
-            } else {
-                youTubePlayerView.setVisibility(View.GONE);
-            }
+        // Set Video
+        String videoId = getVideoId(meal.getYoutubeUrl());
+        if (!videoId.isEmpty()) {
+            youTubePlayerView.setVisibility(View.VISIBLE);
+            youTubePlayerView.initialize(new AbstractYouTubePlayerListener() {
+                @Override
+                public void onReady(@NonNull YouTubePlayer youTubePlayer) {
+                    youTubePlayer.cueVideo(videoId, 0);
+                }
+            });
         } else {
             youTubePlayerView.setVisibility(View.GONE);
         }
@@ -230,11 +230,15 @@ public class MealDetailsFragment extends Fragment {
 
     private List<Ingredient> extractIngredients(Meal meal) {
         List<Ingredient> ingredientsList = new ArrayList<>();
+
         for (int i = 1; i <= 20; i++) {
             try {
+                // 1. Get Ingredient Name using Reflection (Because Meal has 20 fields)
                 Method ingredientMethod = meal.getClass().getMethod("getStrIngredient" + i);
-                Method measureMethod = meal.getClass().getMethod("getStrMeasure" + i);
                 Object ingredientObj = ingredientMethod.invoke(meal);
+
+                // 2. Get Measure using Reflection
+                Method measureMethod = meal.getClass().getMethod("getStrMeasure" + i);
                 Object measureObj = measureMethod.invoke(meal);
 
                 String ingredientName = (ingredientObj != null) ? ingredientObj.toString().trim() : "";
@@ -242,33 +246,48 @@ public class MealDetailsFragment extends Fragment {
 
                 if (!ingredientName.isEmpty()) {
                     Ingredient ingredient = new Ingredient();
-                    try {
-                        Method setName = ingredient.getClass().getMethod("setStrIngredient", String.class);
-                        setName.invoke(ingredient, ingredientName + "\n" + measure);
-                    } catch (Exception e) {
-                        Method setName = ingredient.getClass().getMethod("setName", String.class);
-                        setName.invoke(ingredient, ingredientName + "\n" + measure);
-                    }
+
+                    // 3. Set data DIRECTLY (No reflection needed here anymore)
+                    // This requires the setName() method we added in Step 1
+                    ingredient.setName(ingredientName + "\n" + measure);
+
                     ingredientsList.add(ingredient);
                 }
             } catch (Exception e) {
+                // If this catches, it means Meal.java is missing "getStrIngredientX" methods
+                Log.e("ExtractIngredients", "Error extracting ingredient " + i, e);
             }
         }
         return ingredientsList;
     }
 
     private String getVideoId(String url) {
-        String videoId = null;
-        if (url != null && url.trim().length() > 0) {
-            String expression = "^.*(youtu.be\\/|v\\/|u\\/\\w\\/|embed\\/|watch\\?v=|&v=)([^#&?]*).*";
-            Pattern pattern = Pattern.compile(expression);
-            Matcher matcher = pattern.matcher(url);
-            if (matcher.find()) {
-                String group = matcher.group(2);
-                if (group != null && group.length() == 11) videoId = group;
+        if (url == null || url.isEmpty()) return "";
+        String videoId = "";
+        try {
+            if (url.contains("v=")) {
+                String[] split = url.split("v=");
+                if (split.length > 1) {
+                    videoId = split[1];
+                    int ampersandPosition = videoId.indexOf('&');
+                    if (ampersandPosition != -1) {
+                        videoId = videoId.substring(0, ampersandPosition);
+                    }
+                }
+            } else if (url.contains("youtu.be/")) {
+                String[] split = url.split("youtu.be/");
+                if (split.length > 1) {
+                    videoId = split[1];
+                    int questionMark = videoId.indexOf('?');
+                    if (questionMark != -1) {
+                        videoId = videoId.substring(0, questionMark);
+                    }
+                }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        return videoId;
+        return videoId.trim();
     }
 
     @Override
