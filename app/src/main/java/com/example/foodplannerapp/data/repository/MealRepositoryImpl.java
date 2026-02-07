@@ -6,6 +6,7 @@ import com.example.foodplannerapp.model.CategoryResponse;
 import com.example.foodplannerapp.model.CountryResponse;
 import com.example.foodplannerapp.model.IngredientResponse;
 import com.example.foodplannerapp.model.Meal;
+import com.example.foodplannerapp.model.MealPlan;
 import com.example.foodplannerapp.model.MealResponse;
 
 import java.util.List;
@@ -31,6 +32,7 @@ public class MealRepositoryImpl implements MealRepository {
         return instance;
     }
 
+    // --- Remote Data Methods ---
     @Override
     public Single<MealResponse> getRandomMeal() {
         return remoteDataSource.getRandomMeal();
@@ -89,5 +91,20 @@ public class MealRepositoryImpl implements MealRepository {
     @Override
     public Single<List<Meal>> getStoredFavorites() {
         return localDataSource.getFavorites();
+    }
+
+    @Override
+    public Completable addMealToPlan(MealPlan mealPlan) {
+        return localDataSource.insertMealPlan(mealPlan);
+    }
+
+    @Override
+    public Completable removeMealFromPlan(MealPlan mealPlan) {
+        return localDataSource.deleteMealPlan(mealPlan);
+    }
+
+    @Override
+    public Single<List<MealPlan>> getPlan() {
+        return localDataSource.getAllPlans();
     }
 }

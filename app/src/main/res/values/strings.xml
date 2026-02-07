@@ -1,5 +1,50 @@
 <resources>
     <string name="app_name">FoodPlannerApp</string>
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="onboarding_title">Enjoy your lunch time</string>
+    <string name="onboarding_description">Just relax and not overthink what to eat. This is in our side with our personalized meal plans just prepared and adapted to your needs.</string>
+    <string name="action_next">Next</string>
+
+    <string name="label_email">Email Address</string>
+    <string name="hint_email_example">aaa@gmail.com</string>
+    <string name="label_enter_password">Enter your Password</string>
+    <string name="hint_password_type">Type your password here</string>
+    <string name="action_login">Login</string>
+    <string name="text_or_social">or use social sign up</string>
+    <string name="continue_google">Continue with Google</string>
+    <string name="continue_facebook">Continue with Facebook</string>
+    <string name="action_skip">Skip this For Now</string>
+    <string name="text_no_account">Do Not Have An Account? SignUp</string>
+
+    <string name="title_signup">Sign Up</string>
+    <string name="hint_full_name">Full Name</string>
+    <string name="hint_password">Password</string>
+    <string name="hint_confirm_password">Confirm Password</string>
+    <string name="action_signup">Sign Up</string>
+    <string name="text_already_have_account">Already have an account? Login</string>
+
+    <string name="title_home">Home Screen</string>
+    <string name="text_loading">Loading...</string>
+    <string name="action_view_recipe">View Recipe</string>
+    <string name="title_sweet_cravings">Sweet Cravings</string>
+    <string name="title_salty_savory">Salty Savory</string>
+
+    <string name="title_search_explore">Search &amp; Explore</string>
+    <string name="hint_search_recipes">Search for recipes...</string>
+    <string name="title_categories">Categories</string>
+    <string name="title_cuisines">Cuisines</string>
+    <string name="title_ingredients">Ingredients</string>
+
+    <string name="label_watch_recipe">Watch the Recipe</string>
+    <string name="label_instructions">Instructions</string>
+    <string name="placeholder_meal_name">Meal Name</string>
+    <string name="placeholder_area">Italian</string>
+    <string name="placeholder_category">Main Course</string>
+    <string name="placeholder_steps">Steps...</string>
+
+    <string name="title_favorites">My Favorites</string>
+
+    <string name="title_weekly_plan">My Weekly Plan</string>
+
 </resources>

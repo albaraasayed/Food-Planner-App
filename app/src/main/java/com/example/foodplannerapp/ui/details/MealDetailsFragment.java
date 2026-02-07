@@ -61,7 +61,6 @@ public class MealDetailsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // 1. Init Views
         detailMealImg = view.findViewById(R.id.detailMealImg);
         tvTitle = view.findViewById(R.id.tvMealTitle);
         tvArea = view.findViewById(R.id.tvArea);
@@ -69,36 +68,29 @@ public class MealDetailsFragment extends Fragment {
         tvInstructions = view.findViewById(R.id.tvInstructions);
         youTubePlayerView = view.findViewById(R.id.youtube_player_view);
         btnBack = view.findViewById(R.id.btnBack);
-        btnFavorite = view.findViewById(R.id.btnFavorite); // Should find it now
+        btnFavorite = view.findViewById(R.id.btnFavorite);
         fabPlan = view.findViewById(R.id.fabPlan);
         rvIngredients = view.findViewById(R.id.rvIngredients);
 
-        // 2. Setup Adapter
         ingredientAdapter = new DetailsIngredientAdapter();
         rvIngredients.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         rvIngredients.setAdapter(ingredientAdapter);
 
-        // 3. Init Repository
         repository = MealRepositoryImpl.getInstance(
                 MealRemoteDataSourceImpl.getInstance(RetrofitClient.getService()),
                 MealLocalDataSourceImpl.getInstance(getContext())
         );
 
-        // 4. Listeners
         btnBack.setOnClickListener(v -> requireActivity().onBackPressed());
         fabPlan.setOnClickListener(v -> Toast.makeText(getContext(), "Weekly Planner", Toast.LENGTH_SHORT).show());
         btnFavorite.setOnClickListener(v -> toggleFavorite());
 
         getLifecycle().addObserver(youTubePlayerView);
 
-        // 5. Load Data
         if (getArguments() != null) {
             currentMeal = (Meal) getArguments().getSerializable("meal_data");
             if (currentMeal != null) {
-                // Check if favorite
                 checkFavoriteStatus(currentMeal.getId());
-
-                // Check if Lite or Full
                 if (currentMeal.getInstructions() == null || currentMeal.getInstructions().isEmpty()) {
                     displayBasicInfo(currentMeal);
                     fetchFullMealDetails(currentMeal.getId());
@@ -108,8 +100,6 @@ public class MealDetailsFragment extends Fragment {
             }
         }
     }
-
-    // --- FAVORITE LOGIC ---
 
     private void checkFavoriteStatus(String mealId) {
         repository.getStoredFavorites()
@@ -126,7 +116,8 @@ public class MealDetailsFragment extends Fragment {
                             }
                             updateFavoriteIcon();
                         },
-                        error -> {}
+                        error -> {
+                        }
                 );
     }
 
@@ -134,7 +125,6 @@ public class MealDetailsFragment extends Fragment {
         if (currentMeal == null) return;
 
         if (isFavorite) {
-            // Remove
             repository.removeFromFavorites(currentMeal)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
@@ -147,7 +137,6 @@ public class MealDetailsFragment extends Fragment {
                             error -> Toast.makeText(getContext(), "Error removing", Toast.LENGTH_SHORT).show()
                     );
         } else {
-            // Add
             repository.addToFavorites(currentMeal)
                     .subscribeOn(Schedulers.io())
                     .observeOn(AndroidSchedulers.mainThread())
@@ -172,8 +161,6 @@ public class MealDetailsFragment extends Fragment {
             btnFavorite.setColorFilter(ContextCompat.getColor(requireContext(), R.color.black));
         }
     }
-
-    // --- DATA LOADING & VIDEO ---
 
     private void fetchFullMealDetails(String mealId) {
         repository.getMealDetails(mealId)
@@ -201,19 +188,17 @@ public class MealDetailsFragment extends Fragment {
     }
 
     private void displayFullMeal(Meal meal) {
-        Log.i("MealDetails", "displayFullMeal: "+meal.getStrIngredient1());
+        Log.i("MealDetails", "displayFullMeal: " + meal.getStrIngredient1());
         tvTitle.setText(meal.getName());
         tvArea.setText(meal.getArea());
         tvCategory.setText(meal.getCategory());
         tvInstructions.setText(meal.getInstructions());
         Glide.with(this).load(meal.getThumbUrl()).into(detailMealImg);
 
-        // Set Ingredients
         List<Ingredient> ingredients = extractIngredients(meal);
         Log.d("Ingredients", ingredients.toString());
         ingredientAdapter.setList(ingredients);
 
-        // Set Video
         String videoId = getVideoId(meal.getYoutubeUrl());
         if (!videoId.isEmpty()) {
             youTubePlayerView.setVisibility(View.VISIBLE);
@@ -246,15 +231,10 @@ public class MealDetailsFragment extends Fragment {
 
                 if (!ingredientName.isEmpty()) {
                     Ingredient ingredient = new Ingredient();
-
-                    // 3. Set data DIRECTLY (No reflection needed here anymore)
-                    // This requires the setName() method we added in Step 1
                     ingredient.setName(ingredientName + "\n" + measure);
-
                     ingredientsList.add(ingredient);
                 }
             } catch (Exception e) {
-                // If this catches, it means Meal.java is missing "getStrIngredientX" methods
                 Log.e("ExtractIngredients", "Error extracting ingredient " + i, e);
             }
         }
