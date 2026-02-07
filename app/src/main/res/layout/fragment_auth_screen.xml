@@ -36,7 +36,7 @@
             style="@style/Text.Label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Email Address"
+            android:text="@string/label_email"
             android:textColor="@android:color/white" />
 
         <com.google.android.material.textfield.TextInputLayout
@@ -48,7 +48,7 @@
             <com.google.android.material.textfield.TextInputEditText
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="aaa@gmail.com"
+                android:hint="@string/hint_email_example"
                 android:inputType="textEmailAddress"
                 android:textColor="@android:color/black" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -58,7 +58,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Enter your Password"
+            android:text="@string/label_enter_password"
             android:textColor="@android:color/white" />
 
         <com.google.android.material.textfield.TextInputLayout
@@ -72,7 +72,7 @@
             <com.google.android.material.textfield.TextInputEditText
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Type your password here"
+                android:hint="@string/hint_password_type"
                 android:inputType="textPassword"
                 android:textColor="@android:color/black" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -83,7 +83,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Login" />
+            android:text="@string/action_login" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -102,7 +102,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="12dp"
-                android:text="or use social sign up"
+                android:text="@string/text_or_social"
                 android:textColor="@android:color/white"
                 android:textSize="12sp" />
 
@@ -118,7 +118,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Continue with Google"
+            android:text="@string/continue_google"
             app:icon="@drawable/ic_google"
             app:iconGravity="textStart"
             app:iconPadding="12dp" />
@@ -128,7 +128,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Continue with Facebook"
+            android:text="@string/continue_facebook"
             app:icon="@drawable/ic_facebook"
             app:iconGravity="textStart"
             app:iconPadding="12dp" />
@@ -139,7 +139,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="Skip this For Now" />
+            android:text="@string/action_skip" />
 
         <TextView
             android:id="@+id/tvSignUp"
@@ -148,7 +148,7 @@
             android:layout_marginTop="12dp"
             android:layout_marginBottom="16dp"
             android:gravity="center"
-            android:text="Do Not Have An Account? SignUp"
+            android:text="@string/text_no_account"
             android:textColor="@android:color/white"
             android:textSize="14sp" />
 

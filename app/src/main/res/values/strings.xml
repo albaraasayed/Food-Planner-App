@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">FoodPlannerApp</string>
-    <string name="hello_blank_fragment">Hello blank fragment</string>
 
     <string name="onboarding_title">Enjoy your lunch time</string>
     <string name="onboarding_description">Just relax and not overthink what to eat. This is in our side with our personalized meal plans just prepared and adapted to your needs.</string>

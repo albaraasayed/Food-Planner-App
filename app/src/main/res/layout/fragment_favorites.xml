@@ -10,7 +10,7 @@
         android:id="@+id/tvTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="My Favorites"
+        android:text="@string/title_favorites"
         android:textColor="@color/black"
         android:textSize="24sp"
         android:textStyle="bold"
