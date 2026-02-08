@@ -8,6 +8,9 @@ import com.example.foodplannerapp.model.IngredientResponse;
 import com.example.foodplannerapp.model.Meal;
 import com.example.foodplannerapp.model.MealPlan;
 import com.example.foodplannerapp.model.MealResponse;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.List;
 
@@ -20,9 +23,15 @@ public class MealRepositoryImpl implements MealRepository {
     private final MealRemoteDataSource remoteDataSource;
     private final MealLocalDataSource localDataSource;
 
+    // Firebase References
+    private final FirebaseAuth mAuth;
+    private final DatabaseReference mDatabase;
+
     private MealRepositoryImpl(MealRemoteDataSource remoteDataSource, MealLocalDataSource localDataSource) {
         this.remoteDataSource = remoteDataSource;
         this.localDataSource = localDataSource;
+        this.mAuth = FirebaseAuth.getInstance();
+        this.mDatabase = FirebaseDatabase.getInstance().getReference();
     }
 
     public static MealRepositoryImpl getInstance(MealRemoteDataSource remoteDataSource, MealLocalDataSource localDataSource) {
@@ -32,7 +41,7 @@ public class MealRepositoryImpl implements MealRepository {
         return instance;
     }
 
-    // --- Remote Data Methods ---
+    // --- Remote Data Methods (Retrofit) ---
     @Override
     public Single<MealResponse> getRandomMeal() {
         return remoteDataSource.getRandomMeal();
@@ -78,33 +87,66 @@ public class MealRepositoryImpl implements MealRepository {
         return remoteDataSource.getMealDetails(id);
     }
 
+    // --- Favorites Logic (Room + Firebase) ---
     @Override
     public Completable addToFavorites(Meal meal) {
-        return localDataSource.insertFavorite(meal);
+        return localDataSource.insertFavorite(meal)
+                .doOnComplete(() -> {
+                    // If Online & Logged In: Save to Firebase
+                    if (mAuth.getCurrentUser() != null) {
+                        String uid = mAuth.getCurrentUser().getUid();
+                        mDatabase.child("users").child(uid).child("favorites").child(meal.getId()).setValue(meal);
+                    }
+                });
     }
 
     @Override
     public Completable removeFromFavorites(Meal meal) {
-        return localDataSource.deleteFavorite(meal);
+        return localDataSource.deleteFavorite(meal)
+                .doOnComplete(() -> {
+                    // If Online & Logged In: Remove from Firebase
+                    if (mAuth.getCurrentUser() != null) {
+                        String uid = mAuth.getCurrentUser().getUid();
+                        mDatabase.child("users").child(uid).child("favorites").child(meal.getId()).removeValue();
+                    }
+                });
     }
 
     @Override
     public Single<List<Meal>> getStoredFavorites() {
+        // Always get from Room (Offline Support)
         return localDataSource.getFavorites();
     }
 
+    // --- Planner Logic (Room + Firebase) ---
     @Override
     public Completable addMealToPlan(MealPlan mealPlan) {
-        return localDataSource.insertMealPlan(mealPlan);
+        return localDataSource.insertMealPlan(mealPlan)
+                .doOnComplete(() -> {
+                    if (mAuth.getCurrentUser() != null) {
+                        String uid = mAuth.getCurrentUser().getUid();
+                        // Generate a unique key for the plan based on day and meal ID
+                        String key = mealPlan.getDay() + "_" + mealPlan.getMealId();
+                        mDatabase.child("users").child(uid).child("plans").child(key).setValue(mealPlan);
+                    }
+                });
     }
 
     @Override
     public Completable removeMealFromPlan(MealPlan mealPlan) {
-        return localDataSource.deleteMealPlan(mealPlan);
+        return localDataSource.deleteMealPlan(mealPlan)
+                .doOnComplete(() -> {
+                    if (mAuth.getCurrentUser() != null) {
+                        String uid = mAuth.getCurrentUser().getUid();
+                        String key = mealPlan.getDay() + "_" + mealPlan.getMealId();
+                        mDatabase.child("users").child(uid).child("plans").child(key).removeValue();
+                    }
+                });
     }
 
     @Override
     public Single<List<MealPlan>> getPlan() {
+        // Always get from Room (Offline Support)
         return localDataSource.getAllPlans();
     }
 }

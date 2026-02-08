@@ -35,6 +35,7 @@ android {
 }
 
 dependencies {
+    implementation("com.google.firebase:firebase-database")
     // Import the BoM for the Firebase platform
     implementation(platform("com.google.firebase:firebase-bom:34.9.0"))
 

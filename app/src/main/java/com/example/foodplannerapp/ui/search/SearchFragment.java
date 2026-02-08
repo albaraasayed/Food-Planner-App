@@ -17,6 +17,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.foodplannerapp.R;
+import com.example.foodplannerapp.data.config.RetrofitClient;
 import com.example.foodplannerapp.data.local.local_datasource_implementation.MealLocalDataSourceImpl;
 import com.example.foodplannerapp.data.remote.remote_datasource_implementation.MealRemoteDataSourceImpl;
 import com.example.foodplannerapp.data.repository.MealRepositoryImpl;
@@ -24,7 +25,6 @@ import com.example.foodplannerapp.model.Category;
 import com.example.foodplannerapp.model.Country;
 import com.example.foodplannerapp.model.Ingredient;
 import com.example.foodplannerapp.model.Meal;
-import com.example.foodplannerapp.data.config.RetrofitClient;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,11 +54,13 @@ public class SearchFragment extends Fragment implements SearchContract.View {
         RecyclerView rvCountryChips = view.findViewById(R.id.rvCountryChips);
         RecyclerView rvIngredientChips = view.findViewById(R.id.rvIngredientChips);
 
+        // --- FIX IS HERE: Used "action_search_to_details" ---
         mealsAdapter = new SearchMealsAdapter(meal -> {
             Bundle bundle = new Bundle();
             bundle.putSerializable("meal_data", meal);
-            Navigation.findNavController(view).navigate(R.id.action_searchFragment_to_mealDetailsFragment, bundle);
+            Navigation.findNavController(view).navigate(R.id.action_search_to_details, bundle);
         });
+
         rvSearchResults.setLayoutManager(new GridLayoutManager(getContext(), 2));
         rvSearchResults.setAdapter(mealsAdapter);
 

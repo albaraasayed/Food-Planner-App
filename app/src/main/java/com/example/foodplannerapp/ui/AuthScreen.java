@@ -46,13 +46,13 @@ public class AuthScreen extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         mAuth = FirebaseAuth.getInstance();
-        credentialManager = CredentialManager.create(requireContext()); // Initialize
+        credentialManager = CredentialManager.create(requireContext());
 
         etEmail = view.findViewById(R.id.etLoginEmail);
         etPassword = view.findViewById(R.id.etLoginPassword);
         Button btnLogin = view.findViewById(R.id.btnLogin);
         Button btnGoogle = view.findViewById(R.id.btnGoogle);
-        Button btnSkip = view.findViewById(R.id.btnSkip);
+        Button btnSkip = view.findViewById(R.id.btnSkip); // Defined ONCE here
         TextView tvSignUp = view.findViewById(R.id.tvSignUp);
 
         // --- Email Login ---
@@ -67,16 +67,20 @@ public class AuthScreen extends Fragment {
             }
         });
 
-        // --- Google Login (New Way) ---
+        // --- Google Login ---
         if (btnGoogle != null) {
             btnGoogle.setOnClickListener(v -> signInWithGoogle());
         }
 
+        // --- Guest Mode (Skip) ---
+        // Fix: Use the single definition of btnSkip from above
         if (btnSkip != null) {
             btnSkip.setOnClickListener(v ->
-                    Navigation.findNavController(v).navigate(R.id.action_authScreen_to_homeScreen));
+                    // Navigate to PLANNER (Guest Mode), not Home
+                    Navigation.findNavController(v).navigate(R.id.action_authScreen_to_plannerFragment));
         }
 
+        // --- Sign Up Navigation ---
         tvSignUp.setOnClickListener(v ->
                 Navigation.findNavController(v).navigate(R.id.action_authScreen_to_registerFragment));
     }
