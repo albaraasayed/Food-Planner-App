@@ -1,10 +1,9 @@
 package com.example.foodplannerapp.ui;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,29 +11,42 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.navigation.fragment.NavHostFragment;
+import androidx.navigation.Navigation;
 
-import com.airbnb.lottie.LottieAnimationView;
 import com.example.foodplannerapp.R;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class SplashScreen extends Fragment {
 
+    @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater,
-                             ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_splash_screen, container, false);
+    }
 
-        View view = inflater.inflate(R.layout.fragment_splash_screen, container, false);
-        LottieAnimationView lottie = view.findViewById(R.id.lottieSplash);
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
-        lottie.playAnimation();
-
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            if (isAdded()) {
-                NavHostFragment.findNavController(this)
-                        .navigate(R.id.action_splashScreen_to_onboarding);
+        new Handler().postDelayed(() -> {
+            if (getContext() != null) {
+                checkNavigationFlow(view);
             }
         }, 3000);
+    }
 
-        return view;
+    private void checkNavigationFlow(View view) {
+        SharedPreferences settings = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        boolean isFirstTime = settings.getBoolean("isFirstTime", true);
+
+        if (isFirstTime) {
+            Navigation.findNavController(view).navigate(R.id.action_splashScreen_to_onboarding);
+        } else {
+            if (FirebaseAuth.getInstance().getCurrentUser() != null) {
+                Navigation.findNavController(view).navigate(R.id.action_splashScreen_to_home);
+            } else {
+                Navigation.findNavController(view).navigate(R.id.action_splashScreen_to_auth);
+            }
+        }
     }
 }

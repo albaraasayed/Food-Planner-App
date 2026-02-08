@@ -1,7 +1,7 @@
 package com.example.foodplannerapp.ui.profile;
 
-import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,17 +12,19 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.credentials.ClearCredentialStateRequest;
+import androidx.credentials.CredentialManager;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
 import com.bumptech.glide.Glide;
 import com.example.foodplannerapp.R;
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.material.button.MaterialButton;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 public class ProfileFragment extends Fragment {
 
@@ -32,7 +34,7 @@ public class ProfileFragment extends Fragment {
     private ImageButton btnBack;
 
     private FirebaseAuth mAuth;
-    private GoogleSignInClient mGoogleSignInClient;
+    private CredentialManager credentialManager; // New API
 
     public ProfileFragment() {
     }
@@ -48,9 +50,9 @@ public class ProfileFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         mAuth = FirebaseAuth.getInstance();
-        initViews(view);
-        setupGoogleClient();
+        credentialManager = CredentialManager.create(requireContext());
 
+        initViews(view);
         loadUserProfile();
 
         btnLogout.setOnClickListener(v -> logoutUser(v));
@@ -72,18 +74,13 @@ public class ProfileFragment extends Fragment {
         FirebaseUser user = mAuth.getCurrentUser();
         if (user != null) {
             String name = user.getDisplayName();
-            if (name != null && !name.isEmpty()) {
-                tvName.setText(name);
-            } else {
-                tvName.setText("User");
-            }
-
+            tvName.setText((name != null && !name.isEmpty()) ? name : "User");
             tvEmail.setText(user.getEmail());
 
             if (user.getPhotoUrl() != null) {
                 Glide.with(this)
                         .load(user.getPhotoUrl())
-                        .placeholder(R.drawable.ic_person) // Default icon
+                        .placeholder(R.drawable.ic_person)
                         .error(R.drawable.ic_person)
                         .circleCrop()
                         .into(imgProfile);
@@ -91,28 +88,37 @@ public class ProfileFragment extends Fragment {
         }
     }
 
-    private void setupGoogleClient() {
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestEmail()
-                .build();
-        mGoogleSignInClient = GoogleSignIn.getClient(requireActivity(), gso);
-    }
-
     private void logoutUser(View view) {
+        // 1. Sign out of Firebase
         mAuth.signOut();
 
-        mGoogleSignInClient.signOut().addOnCompleteListener(task -> {
-            Navigation.findNavController(view).navigate(R.id.action_profile_to_auth);
+        // 2. Clear Credential Manager State (Replaces GoogleSignInClient.signOut)
+        ClearCredentialStateRequest request = new ClearCredentialStateRequest();
+        Executor executor = Executors.newSingleThreadExecutor();
 
-            // Or if you want to clear the back stack so user can't go back:
-            /*
-            NavOptions navOptions = new NavOptions.Builder()
-                    .setPopUpTo(R.id.homeScreen, true) // Clear history
-                    .build();
-            Navigation.findNavController(view).navigate(R.id.authScreen, null, navOptions);
-            */
+        credentialManager.clearCredentialStateAsync(
+                request,
+                null,
+                executor,
+                new androidx.credentials.CredentialManagerCallback<Void, androidx.credentials.exceptions.ClearCredentialException>() {
+                    @Override
+                    public void onResult(Void result) {
+                        // 3. Navigate back to Auth on Main Thread
+                        requireActivity().runOnUiThread(() -> {
+                            Navigation.findNavController(view).navigate(R.id.action_profile_to_auth);
+                            Toast.makeText(getContext(), "Logged out", Toast.LENGTH_SHORT).show();
+                        });
+                    }
 
-            Toast.makeText(getContext(), "Logged out", Toast.LENGTH_SHORT).show();
-        });
+                    @Override
+                    public void onError(androidx.credentials.exceptions.ClearCredentialException e) {
+                        Log.e("Profile", "Error clearing credentials", e);
+                        // Navigate anyway, even if clearing state failed
+                        requireActivity().runOnUiThread(() ->
+                                Navigation.findNavController(view).navigate(R.id.action_profile_to_auth)
+                        );
+                    }
+                }
+        );
     }
 }

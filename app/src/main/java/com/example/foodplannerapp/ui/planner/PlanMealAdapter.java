@@ -16,15 +16,23 @@ import java.util.List;
 
 public class PlanMealAdapter extends RecyclerView.Adapter<PlanMealAdapter.ViewHolder> {
     private List<MealPlan> meals = new ArrayList<>();
-    private OnDeleteClickListener listener;
+    private OnDeleteClickListener deleteListener;
+    private OnItemClickListener itemListener; // 1. Add this listener
 
+    // 2. Define the Interface
     public interface OnDeleteClickListener {
         void onDelete(MealPlan meal);
     }
 
-    public PlanMealAdapter(List<MealPlan> meals, OnDeleteClickListener listener) {
+    public interface OnItemClickListener {
+        void onItemClick(MealPlan meal);
+    }
+
+    // 3. Update Constructor
+    public PlanMealAdapter(List<MealPlan> meals, OnDeleteClickListener deleteListener, OnItemClickListener itemListener) {
         this.meals = meals;
-        this.listener = listener;
+        this.deleteListener = deleteListener;
+        this.itemListener = itemListener;
     }
 
     @NonNull @Override
@@ -40,7 +48,8 @@ public class PlanMealAdapter extends RecyclerView.Adapter<PlanMealAdapter.ViewHo
         holder.area.setText(meal.getMealArea());
         Glide.with(holder.itemView).load(meal.getMealThumb()).into(holder.img);
 
-        holder.btnDelete.setOnClickListener(v -> listener.onDelete(meal));
+        holder.btnDelete.setOnClickListener(v -> deleteListener.onDelete(meal));
+        holder.itemView.setOnClickListener(v -> itemListener.onItemClick(meal));
     }
 
     @Override public int getItemCount() { return meals.size(); }

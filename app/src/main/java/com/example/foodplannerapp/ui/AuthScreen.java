@@ -1,8 +1,7 @@
 package com.example.foodplannerapp.ui;
 
-import android.app.Activity;
-import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,46 +9,31 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.credentials.CredentialManager;
+import androidx.credentials.CustomCredential;
+import androidx.credentials.GetCredentialRequest;
+import androidx.credentials.GetCredentialResponse;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
 import com.example.foodplannerapp.R;
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.common.api.ApiException;
-import com.google.android.gms.tasks.Task;
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.GoogleAuthProvider;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
 public class AuthScreen extends Fragment {
 
     private FirebaseAuth mAuth;
-    private GoogleSignInClient mGoogleSignInClient;
     private TextInputEditText etEmail, etPassword;
-    private final ActivityResultLauncher<Intent> googleSignInLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            result -> {
-                if (result.getResultCode() == Activity.RESULT_OK) {
-                    Intent data = result.getData();
-                    Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
-                    try {
-                        // Google Sign In was successful, authenticate with Firebase
-                        GoogleSignInAccount account = task.getResult(ApiException.class);
-                        firebaseAuthWithGoogle(account.getIdToken());
-                    } catch (ApiException e) {
-                        Toast.makeText(getContext(), "Google sign in failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }
-    );
+    private CredentialManager credentialManager;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -62,8 +46,7 @@ public class AuthScreen extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         mAuth = FirebaseAuth.getInstance();
-
-        createGoogleRequest();
+        credentialManager = CredentialManager.create(requireContext()); // Initialize
 
         etEmail = view.findViewById(R.id.etLoginEmail);
         etPassword = view.findViewById(R.id.etLoginPassword);
@@ -72,6 +55,7 @@ public class AuthScreen extends Fragment {
         Button btnSkip = view.findViewById(R.id.btnSkip);
         TextView tvSignUp = view.findViewById(R.id.tvSignUp);
 
+        // --- Email Login ---
         btnLogin.setOnClickListener(v -> {
             String email = (etEmail.getText() != null) ? etEmail.getText().toString().trim() : "";
             String password = (etPassword.getText() != null) ? etPassword.getText().toString().trim() : "";
@@ -83,6 +67,7 @@ public class AuthScreen extends Fragment {
             }
         });
 
+        // --- Google Login (New Way) ---
         if (btnGoogle != null) {
             btnGoogle.setOnClickListener(v -> signInWithGoogle());
         }
@@ -102,23 +87,66 @@ public class AuthScreen extends Fragment {
                     if (task.isSuccessful()) {
                         Navigation.findNavController(view).navigate(R.id.action_authScreen_to_homeScreen);
                     } else {
-                        Toast.makeText(getContext(), "Authentication Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Auth Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
-    private void createGoogleRequest() {
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(getString(R.string.default_web_client_id))
-                .requestEmail()
+    private void signInWithGoogle() {
+        // 1. Setup the Google ID Option
+        GetGoogleIdOption googleIdOption = new GetGoogleIdOption.Builder()
+                .setFilterByAuthorizedAccounts(false) // Allow user to pick any account
+                .setServerClientId(getString(R.string.default_web_client_id))
+                .setAutoSelectEnabled(false) // <--- CHANGE THIS TO FALSE
                 .build();
 
-        mGoogleSignInClient = GoogleSignIn.getClient(requireActivity(), gso);
+        // 2. Create the Request
+        GetCredentialRequest request = new GetCredentialRequest.Builder()
+                .addCredentialOption(googleIdOption)
+                .build();
+
+        // 3. Launch Credential Manager
+        Executor executor = Executors.newSingleThreadExecutor();
+
+        credentialManager.getCredentialAsync(
+                requireContext(),
+                request,
+                null,
+                executor,
+                new androidx.credentials.CredentialManagerCallback<GetCredentialResponse, androidx.credentials.exceptions.GetCredentialException>() {
+                    @Override
+                    public void onResult(GetCredentialResponse result) {
+                        handleSignIn(result);
+                    }
+
+                    @Override
+                    public void onError(androidx.credentials.exceptions.GetCredentialException e) {
+                        Log.e("Auth", "Error: " + e.getMessage());
+                        requireActivity().runOnUiThread(() ->
+                                Toast.makeText(getContext(), "Sign in failed: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                        );
+                    }
+                }
+        );
     }
 
-    private void signInWithGoogle() {
-        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
-        googleSignInLauncher.launch(signInIntent);
+    private void handleSignIn(GetCredentialResponse response) {
+        CustomCredential credential = (CustomCredential) response.getCredential();
+
+        if (credential.getType().equals(GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL)) {
+            try {
+                // Extract the ID Token
+                GoogleIdTokenCredential googleIdToken = GoogleIdTokenCredential.createFrom(credential.getData());
+                String idToken = googleIdToken.getIdToken();
+
+                // Authenticate with Firebase
+                firebaseAuthWithGoogle(idToken);
+            } catch (Exception e) {
+                Log.e("Auth", "Invalid Google ID Token", e);
+            }
+        } else {
+            Log.e("Auth", "Unexpected credential type");
+        }
     }
 
     private void firebaseAuthWithGoogle(String idToken) {
@@ -130,18 +158,8 @@ public class AuthScreen extends Fragment {
                             Navigation.findNavController(getView()).navigate(R.id.action_authScreen_to_homeScreen);
                         }
                     } else {
-                        Toast.makeText(getContext(), "Authentication Failed.", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Firebase Auth Failed.", Toast.LENGTH_SHORT).show();
                     }
                 });
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        if (mAuth.getCurrentUser() != null) {
-            // Auto login
-            if (getView() != null)
-                Navigation.findNavController(getView()).navigate(R.id.action_authScreen_to_homeScreen);
-        }
     }
 }

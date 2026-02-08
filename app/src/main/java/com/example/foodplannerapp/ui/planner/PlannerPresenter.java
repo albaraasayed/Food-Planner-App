@@ -27,10 +27,10 @@ public class PlannerPresenter {
                             // Group List by Date
                             Map<String, List<MealPlan>> grouped = new HashMap<>();
                             for (MealPlan m : meals) {
-                                if (!grouped.containsKey(m.getDate())) {
-                                    grouped.put(m.getDate(), new ArrayList<>());
+                                if (!grouped.containsKey(m.getDay())) {
+                                    grouped.put(m.getDay(), new ArrayList<>());
                                 }
-                                grouped.get(m.getDate()).add(m);
+                                grouped.get(m.getDay()).add(m);
                             }
                             view.showPlan(grouped);
                         },

@@ -1,5 +1,6 @@
 package com.example.foodplannerapp.ui.details;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -25,14 +26,20 @@ import com.example.foodplannerapp.data.remote.remote_datasource_implementation.M
 import com.example.foodplannerapp.data.repository.MealRepositoryImpl;
 import com.example.foodplannerapp.model.Ingredient;
 import com.example.foodplannerapp.model.Meal;
+import com.example.foodplannerapp.model.MealPlan; // Import MealPlan
+import com.google.android.material.dialog.MaterialAlertDialogBuilder; // Import Dialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener;
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView;
 
 import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -61,6 +68,7 @@ public class MealDetailsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // Initialize Views
         detailMealImg = view.findViewById(R.id.detailMealImg);
         tvTitle = view.findViewById(R.id.tvMealTitle);
         tvArea = view.findViewById(R.id.tvArea);
@@ -72,21 +80,34 @@ public class MealDetailsFragment extends Fragment {
         fabPlan = view.findViewById(R.id.fabPlan);
         rvIngredients = view.findViewById(R.id.rvIngredients);
 
+        // Setup Adapter
         ingredientAdapter = new DetailsIngredientAdapter();
         rvIngredients.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false));
         rvIngredients.setAdapter(ingredientAdapter);
 
+        // Setup Repository
         repository = MealRepositoryImpl.getInstance(
                 MealRemoteDataSourceImpl.getInstance(RetrofitClient.getService()),
                 MealLocalDataSourceImpl.getInstance(getContext())
         );
 
+        // Setup Listeners
         btnBack.setOnClickListener(v -> requireActivity().onBackPressed());
-        fabPlan.setOnClickListener(v -> Toast.makeText(getContext(), "Weekly Planner", Toast.LENGTH_SHORT).show());
+
+        // --- 1. OPEN DAY PICKER ON CLICK ---
+        fabPlan.setOnClickListener(v -> {
+            if (currentMeal != null) {
+                showDayPickerDialog();
+            } else {
+                Toast.makeText(getContext(), "Please wait for meal to load", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         btnFavorite.setOnClickListener(v -> toggleFavorite());
 
         getLifecycle().addObserver(youTubePlayerView);
 
+        // Load Data
         if (getArguments() != null) {
             currentMeal = (Meal) getArguments().getSerializable("meal_data");
             if (currentMeal != null) {
@@ -100,6 +121,73 @@ public class MealDetailsFragment extends Fragment {
             }
         }
     }
+
+    // --- NEW: LOGIC TO SHOW DAYS DIALOG ---
+    private void showDayPickerDialog() {
+        // 1. Calculate days from Today to Saturday
+        List<String> daysList = new ArrayList<>();
+        Calendar calendar = Calendar.getInstance();
+        SimpleDateFormat dayFormat = new SimpleDateFormat("EEEE", Locale.ENGLISH);
+
+        // Loop: Add today, then increment until we pass Saturday
+        int currentDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+
+        // Standard week: Sunday=1 ... Saturday=7
+        // We want to show days from Today until Saturday.
+        // If today is Saturday, show just Saturday.
+
+        while (currentDayOfWeek <= Calendar.SATURDAY) {
+            Date date = calendar.getTime();
+            daysList.add(dayFormat.format(date));
+
+            // Move to next day
+            calendar.add(Calendar.DAY_OF_YEAR, 1);
+            currentDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+
+            // Safety break if we loop back to Sunday (meaning we finished the week)
+            if (currentDayOfWeek == Calendar.SUNDAY) break;
+        }
+
+        // Convert to CharSequence array for the Dialog
+        final CharSequence[] daysArray = daysList.toArray(new CharSequence[0]);
+
+        // 2. Show Dialog
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Plan this meal for:")
+                .setItems(daysArray, (dialog, which) -> {
+                    String selectedDay = daysArray[which].toString();
+                    addToPlanner(selectedDay);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    // --- NEW: SAVE TO DATABASE ---
+    private void addToPlanner(String day) {
+        if (currentMeal == null) return;
+
+        // Create MealPlan object (Mapping Meal -> MealPlan)
+        MealPlan plan = new MealPlan();
+        plan.setDay(day);
+        plan.setMealId(currentMeal.getId());
+        plan.setMealName(currentMeal.getName());
+        plan.setMealThumb(currentMeal.getThumbUrl());
+        plan.setMealArea(currentMeal.getArea());
+
+        // Save using Repository
+        repository.addMealToPlan(plan)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(
+                        () -> Toast.makeText(getContext(), "Added to " + day, Toast.LENGTH_SHORT).show(),
+                        error -> {
+                            Toast.makeText(getContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
+                            Log.e("Planner", "Error adding plan", error);
+                        }
+                );
+    }
+
+    // --- EXISTING METHODS BELOW ---
 
     private void checkFavoriteStatus(String mealId) {
         repository.getStoredFavorites()
@@ -154,8 +242,8 @@ public class MealDetailsFragment extends Fragment {
     private void updateFavoriteIcon() {
         if (getContext() == null) return;
         if (isFavorite) {
-            btnFavorite.setImageResource(R.drawable.ic_favorite);
-            btnFavorite.setColorFilter(ContextCompat.getColor(requireContext(), R.color.error_red));
+            btnFavorite.setImageResource(R.drawable.ic_favorite); // Ensure you have this drawable
+            btnFavorite.setColorFilter(ContextCompat.getColor(requireContext(), R.color.error_red)); // Ensure color exists or use generic red
         } else {
             btnFavorite.setImageResource(R.drawable.ic_favorite_border);
             btnFavorite.setColorFilter(ContextCompat.getColor(requireContext(), R.color.black));
@@ -170,9 +258,8 @@ public class MealDetailsFragment extends Fragment {
                         response -> {
                             if (response.getMeals() != null && !response.getMeals().isEmpty()) {
                                 currentMeal = response.getMeals().get(0);
-                                Log.d("MealDetails", currentMeal.toString());
                                 displayFullMeal(currentMeal);
-                                checkFavoriteStatus(currentMeal.getId()); // Re-check after full load
+                                checkFavoriteStatus(currentMeal.getId());
                             }
                         },
                         error -> Toast.makeText(getContext(), "Error loading details", Toast.LENGTH_SHORT).show()
@@ -188,7 +275,6 @@ public class MealDetailsFragment extends Fragment {
     }
 
     private void displayFullMeal(Meal meal) {
-        Log.i("MealDetails", "displayFullMeal: " + meal.getStrIngredient1());
         tvTitle.setText(meal.getName());
         tvArea.setText(meal.getArea());
         tvCategory.setText(meal.getCategory());
@@ -196,7 +282,6 @@ public class MealDetailsFragment extends Fragment {
         Glide.with(this).load(meal.getThumbUrl()).into(detailMealImg);
 
         List<Ingredient> ingredients = extractIngredients(meal);
-        Log.d("Ingredients", ingredients.toString());
         ingredientAdapter.setList(ingredients);
 
         String videoId = getVideoId(meal.getYoutubeUrl());
@@ -215,14 +300,10 @@ public class MealDetailsFragment extends Fragment {
 
     private List<Ingredient> extractIngredients(Meal meal) {
         List<Ingredient> ingredientsList = new ArrayList<>();
-
         for (int i = 1; i <= 20; i++) {
             try {
-                // 1. Get Ingredient Name using Reflection (Because Meal has 20 fields)
                 Method ingredientMethod = meal.getClass().getMethod("getStrIngredient" + i);
                 Object ingredientObj = ingredientMethod.invoke(meal);
-
-                // 2. Get Measure using Reflection
                 Method measureMethod = meal.getClass().getMethod("getStrMeasure" + i);
                 Object measureObj = measureMethod.invoke(meal);
 
@@ -232,6 +313,8 @@ public class MealDetailsFragment extends Fragment {
                 if (!ingredientName.isEmpty()) {
                     Ingredient ingredient = new Ingredient();
                     ingredient.setName(ingredientName + "\n" + measure);
+                    // You might want to build a proper URL for thumbnails here if needed
+                    ingredient.setThumbnail("https://www.themealdb.com/images/ingredients/" + ingredientName + "-Small.png");
                     ingredientsList.add(ingredient);
                 }
             } catch (Exception e) {

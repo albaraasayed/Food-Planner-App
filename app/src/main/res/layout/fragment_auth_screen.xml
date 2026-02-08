@@ -127,16 +127,6 @@
             app:iconPadding="12dp" />
 
         <com.google.android.material.button.MaterialButton
-            style="@style/Button.Social"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/continue_facebook"
-            app:icon="@drawable/ic_facebook"
-            app:iconGravity="textStart"
-            app:iconPadding="12dp" />
-
-        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSkip"
             style="@style/Button.Skip"
             android:layout_width="match_parent"

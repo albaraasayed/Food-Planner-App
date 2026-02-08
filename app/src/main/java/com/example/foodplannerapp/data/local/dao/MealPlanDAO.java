@@ -5,8 +5,11 @@ import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+
 import com.example.foodplannerapp.model.MealPlan;
+
 import java.util.List;
+
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 
@@ -21,6 +24,7 @@ public interface MealPlanDAO {
     @Query("SELECT * FROM meal_plan_table")
     Single<List<MealPlan>> getAllPlannedMeals();
 
-    @Query("SELECT * FROM meal_plan_table WHERE date = :date")
-    Single<List<MealPlan>> getMealsForDate(String date);
+    // --- FIX: Change 'date' to 'day' ---
+    @Query("SELECT * FROM meal_plan_table WHERE day = :day")
+    Single<List<MealPlan>> getMealsByDay(String day);
 }

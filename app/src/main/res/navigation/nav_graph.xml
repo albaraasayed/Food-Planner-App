@@ -9,11 +9,25 @@
         android:id="@+id/splashScreen"
         android:name="com.example.foodplannerapp.ui.SplashScreen"
         android:label="Splash">
+
         <action
             android:id="@+id/action_splashScreen_to_onboarding"
             app:destination="@id/onboardingFragment"
             app:popUpTo="@id/nav_graph"
             app:popUpToInclusive="true" />
+
+        <action
+            android:id="@+id/action_splashScreen_to_auth"
+            app:destination="@id/authScreen"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
+
+        <action
+            android:id="@+id/action_splashScreen_to_home"
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true" />
+
     </fragment>
 
     <fragment
