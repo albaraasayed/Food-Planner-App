@@ -36,9 +36,7 @@ public class HomeMealAdapter extends RecyclerView.Adapter<HomeMealAdapter.ViewHo
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Reusing the card layout from Search
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_meal_search, parent, false);
-        // Force width to be fixed for horizontal scrolling look
         view.getLayoutParams().width = 500;
         return new ViewHolder(view);
     }

@@ -26,8 +26,6 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        // Reuse your existing 'item_ingredient' layout or create a new 'item_category'
-        // Ensure that layout has an ImageView (imgIngredient) and TextView (tvIngredientName)
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_ingredient, parent, false);
         return new ViewHolder(view);
@@ -37,13 +35,11 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Category category = categories.get(position);
 
-        // CORRECTED: Using getName() based on your Category model
         holder.tvName.setText(category.getName());
 
-        // CORRECTED: Using getThumbnail() based on your Category model
         Glide.with(holder.itemView.getContext())
                 .load(category.getThumbnail())
-                .placeholder(R.drawable.ic_launcher_background) // Add a placeholder if needed
+                .placeholder(R.drawable.ic_launcher_background)
                 .into(holder.imgThumbnail);
     }
 
@@ -58,7 +54,6 @@ public class CategoryAdapter extends RecyclerView.Adapter<CategoryAdapter.ViewHo
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            // Make sure these IDs exist in 'item_ingredient.xml'
             imgThumbnail = itemView.findViewById(R.id.imgIngredient);
             tvName = itemView.findViewById(R.id.tvIngredientName);
         }

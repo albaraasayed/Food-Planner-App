@@ -47,7 +47,6 @@ public class IngredientChipAdapter extends RecyclerView.Adapter<IngredientChipAd
         Ingredient item = ingredients.get(position);
         holder.chip.setText(item.getName());
 
-        // Load Ingredient Image into the Chip Icon
         Glide.with(holder.itemView.getContext())
                 .load(item.getThumbnail())
                 .into(new CustomTarget<android.graphics.drawable.Drawable>() {

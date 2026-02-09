@@ -33,11 +33,7 @@ public class CountryAdapter extends RecyclerView.Adapter<CountryAdapter.ViewHold
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Country country = countries.get(position);
-
-        // CORRECTED: Using getName() based on your Country model
         holder.tvName.setText(country.getName());
-
-        // Since API doesn't provide flags, we use a static icon or placeholder
         holder.imgThumbnail.setImageResource(R.drawable.ic_launcher_background);
     }
 

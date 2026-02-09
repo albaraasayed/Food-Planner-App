@@ -35,7 +35,6 @@ public class HomePresenter implements HomeContract.Presenter {
 
     @Override
     public void getSweetMeals() {
-        // "Sweet" -> Dessert Category
         repository.filterByCategory("Dessert")
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -47,7 +46,6 @@ public class HomePresenter implements HomeContract.Presenter {
 
     @Override
     public void getSaltyMeals() {
-        // "Salty" -> Miscellaneous Category (Contains Poutine, Pizza, etc.)
         repository.filterByCategory("Miscellaneous")
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())

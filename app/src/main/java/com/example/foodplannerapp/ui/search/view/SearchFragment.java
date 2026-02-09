@@ -56,7 +56,6 @@ public class SearchFragment extends Fragment implements SearchContract.View {
         RecyclerView rvCountryChips = view.findViewById(R.id.rvCountryChips);
         RecyclerView rvIngredientChips = view.findViewById(R.id.rvIngredientChips);
 
-        // --- FIX IS HERE: Used "action_search_to_details" ---
         mealsAdapter = new SearchMealsAdapter(meal -> {
             Bundle bundle = new Bundle();
             bundle.putSerializable("meal_data", meal);

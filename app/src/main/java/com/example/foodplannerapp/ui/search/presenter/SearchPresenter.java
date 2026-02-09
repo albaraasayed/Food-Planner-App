@@ -14,7 +14,6 @@ public class SearchPresenter implements SearchContract.Presenter {
         this.repository = repository;
     }
 
-    // --- SEARCH ---
     @Override
     public void searchMeals(String query) {
         view.showLoading();
@@ -33,7 +32,6 @@ public class SearchPresenter implements SearchContract.Presenter {
                 );
     }
 
-    // --- CATEGORIES ---
     @Override
     public void getCategories() {
         repository.getCategories()
@@ -63,7 +61,6 @@ public class SearchPresenter implements SearchContract.Presenter {
                 );
     }
 
-    // --- COUNTRIES (CUISINES) ---
     @Override
     public void getCountries() {
         repository.getCountries()
@@ -93,7 +90,6 @@ public class SearchPresenter implements SearchContract.Presenter {
                 );
     }
 
-    // --- INGREDIENTS ---
     @Override
     public void getIngredients() {
         repository.getIngredients()

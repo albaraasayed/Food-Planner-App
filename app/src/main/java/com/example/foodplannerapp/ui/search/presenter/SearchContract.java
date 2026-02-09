@@ -16,7 +16,6 @@ public interface SearchContract {
 
         void showError(String message);
 
-        // All "show" methods must be in this ONE interface
         void showSearchResults(List<Meal> meals);
 
         void showCategories(List<Category> categories);
