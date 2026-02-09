@@ -1,5 +1,7 @@
 package com.example.foodplannerapp.ui.favorites.presenter;
 
+import android.util.Log;
+
 import com.example.foodplannerapp.data.repository.MealRepositoryImpl;
 import com.example.foodplannerapp.model.Meal;
 
@@ -17,6 +19,7 @@ public class FavoritesPresenter implements FavoritesContract.Presenter {
 
     @Override
     public void getFavorites() {
+        // Now observing an Observable stream
         repository.getStoredFavorites()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
@@ -25,7 +28,10 @@ public class FavoritesPresenter implements FavoritesContract.Presenter {
                             if (meals.isEmpty()) view.showEmptyState();
                             else view.showFavorites(meals);
                         },
-                        error -> view.showError("Error loading favorites")
+                        error -> {
+                            Log.e("FavPresenter", "Error", error);
+                            view.showError("Error loading favorites");
+                        }
                 );
     }
 
@@ -35,7 +41,8 @@ public class FavoritesPresenter implements FavoritesContract.Presenter {
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
-                        () -> getFavorites(), // Refresh list after delete
+                        () -> {
+                        },
                         error -> view.showError("Could not delete")
                 );
     }

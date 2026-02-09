@@ -7,26 +7,19 @@ import androidx.annotation.Nullable;
 
 import com.example.foodplannerapp.data.local.local_datasource_interface.MealLocalDataSource;
 import com.example.foodplannerapp.data.remote.remote_datasource_interface.MealRemoteDataSource;
-import com.example.foodplannerapp.model.CategoryResponse;
-import com.example.foodplannerapp.model.CountryResponse;
-import com.example.foodplannerapp.model.IngredientResponse;
-import com.example.foodplannerapp.model.Meal;
-import com.example.foodplannerapp.model.MealPlan;
-import com.example.foodplannerapp.model.MealResponse;
+import com.example.foodplannerapp.model.*;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.*;
 
 import java.util.List;
 
 import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Observable; // Use Observable
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class MealRepositoryImpl implements MealRepository {
+
     private static MealRepositoryImpl instance = null;
     private final MealRemoteDataSource remoteDataSource;
     private final MealLocalDataSource localDataSource;
@@ -104,9 +97,7 @@ public class MealRepositoryImpl implements MealRepository {
                     if (mAuth.getCurrentUser() != null) {
                         String uid = mAuth.getCurrentUser().getUid();
                         mDatabase.child("users").child(uid).child("favorites")
-                                .child(meal.getId())
-                                .setValue(meal)
-                                .addOnFailureListener(e -> Log.e("Repo", "Firebase Upload Failed", e));
+                                .child(meal.getId()).setValue(meal);
                     }
                 });
     }
@@ -118,29 +109,27 @@ public class MealRepositoryImpl implements MealRepository {
                     if (mAuth.getCurrentUser() != null) {
                         String uid = mAuth.getCurrentUser().getUid();
                         mDatabase.child("users").child(uid).child("favorites")
-                                .child(meal.getId())
-                                .removeValue();
+                                .child(meal.getId()).removeValue();
                     }
                 });
     }
 
     @Override
-    public Single<List<Meal>> getStoredFavorites() {
+    public Observable<List<Meal>> getStoredFavorites() {
         return localDataSource.getFavorites();
     }
 
     @Override
     public Completable addMealToPlan(MealPlan mealPlan) {
+        if (mealPlan.getId() == null || !mealPlan.getId().contains("_")) {
+            mealPlan.setId(mealPlan.getDay() + "_" + mealPlan.getMealId());
+        }
         return localDataSource.insertMealPlan(mealPlan)
                 .doOnComplete(() -> {
                     if (mAuth.getCurrentUser() != null) {
                         String uid = mAuth.getCurrentUser().getUid();
-                        // Generate key: Day_MealID
-                        String key = mealPlan.getDay() + "_" + mealPlan.getMealId();
                         mDatabase.child("users").child(uid).child("plans")
-                                .child(key)
-                                .setValue(mealPlan)
-                                .addOnFailureListener(e -> Log.e("Repo", "Firebase Plan Upload Failed", e));
+                                .child(mealPlan.getId()).setValue(mealPlan);
                     }
                 });
     }
@@ -151,16 +140,14 @@ public class MealRepositoryImpl implements MealRepository {
                 .doOnComplete(() -> {
                     if (mAuth.getCurrentUser() != null) {
                         String uid = mAuth.getCurrentUser().getUid();
-                        String key = mealPlan.getDay() + "_" + mealPlan.getMealId();
                         mDatabase.child("users").child(uid).child("plans")
-                                .child(key)
-                                .removeValue();
+                                .child(mealPlan.getId()).removeValue();
                     }
                 });
     }
 
     @Override
-    public Single<List<MealPlan>> getPlan() {
+    public Observable<List<MealPlan>> getPlan() {
         return localDataSource.getAllPlans();
     }
 
@@ -168,31 +155,17 @@ public class MealRepositoryImpl implements MealRepository {
     public void syncFromFirebase(String uid) {
         if (uid == null || uid.equals(currentSyncUid)) return;
         currentSyncUid = uid;
+
+        // 1. Favorites Listener
         mDatabase.child("users").child(uid).child("favorites").addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 Meal remoteMeal = snapshot.getValue(Meal.class);
                 if (remoteMeal != null) {
-                    localDataSource.getFavorites()
+                    localDataSource.insertFavorite(remoteMeal)
                             .subscribeOn(Schedulers.io())
-                            .map(localList -> {
-                                for (Meal local : localList) {
-                                    if (local.getId().equals(remoteMeal.getId())) {
-                                        return true;
-                                    }
-                                }
-                                return false;
-                            })
-                            .subscribe(exists -> {
-                                if (!exists) {
-                                    localDataSource.insertFavorite(remoteMeal).subscribe();
-                                }
-                            }, e -> Log.e("Repo", "Error syncing favorite", e));
+                            .subscribe();
                 }
-            }
-
-            @Override
-            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
             }
 
             @Override
@@ -201,13 +174,16 @@ public class MealRepositoryImpl implements MealRepository {
                 if (meal != null) {
                     localDataSource.deleteFavorite(meal)
                             .subscribeOn(Schedulers.io())
-                            .subscribe(() -> {
-                            }, e -> Log.e("Repo", "Error deleting favorite", e));
+                            .subscribe();
                 }
             }
 
             @Override
-            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String s) {
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String s) {
             }
 
             @Override
@@ -220,27 +196,10 @@ public class MealRepositoryImpl implements MealRepository {
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
                 MealPlan remotePlan = snapshot.getValue(MealPlan.class);
                 if (remotePlan != null) {
-                    localDataSource.getAllPlans()
+                    localDataSource.insertMealPlan(remotePlan)
                             .subscribeOn(Schedulers.io())
-                            .map(localList -> {
-                                for (MealPlan local : localList) {
-                                    if (local.getMealId().equals(remotePlan.getMealId()) &&
-                                            local.getDay().equals(remotePlan.getDay())) {
-                                        return true; // Already exists
-                                    }
-                                }
-                                return false;
-                            })
-                            .subscribe(exists -> {
-                                if (!exists) {
-                                    localDataSource.insertMealPlan(remotePlan).subscribe();
-                                }
-                            }, e -> Log.e("Repo", "Error syncing plan", e));
+                            .subscribe();
                 }
-            }
-
-            @Override
-            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
             }
 
             @Override
@@ -249,13 +208,16 @@ public class MealRepositoryImpl implements MealRepository {
                 if (plan != null) {
                     localDataSource.deleteMealPlan(plan)
                             .subscribeOn(Schedulers.io())
-                            .subscribe(() -> {
-                            }, e -> Log.e("Repo", "Error deleting plan", e));
+                            .subscribe();
                 }
             }
 
             @Override
-            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {
+            public void onChildChanged(@NonNull DataSnapshot snapshot, @Nullable String s) {
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot snapshot, @Nullable String s) {
             }
 
             @Override

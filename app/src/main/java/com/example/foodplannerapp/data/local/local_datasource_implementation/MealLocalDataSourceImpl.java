@@ -1,15 +1,18 @@
 package com.example.foodplannerapp.data.local.local_datasource_implementation;
 
 import android.content.Context;
+
 import com.example.foodplannerapp.data.config.AppDatabase;
 import com.example.foodplannerapp.data.local.dao.MealDAO;
-import com.example.foodplannerapp.data.local.dao.MealPlanDAO; // 1. Import DAO
+import com.example.foodplannerapp.data.local.dao.MealPlanDAO;
 import com.example.foodplannerapp.data.local.local_datasource_interface.MealLocalDataSource;
 import com.example.foodplannerapp.model.Meal;
-import com.example.foodplannerapp.model.MealPlan; // 2. Import Model
+import com.example.foodplannerapp.model.MealPlan;
+
 import java.util.List;
+
 import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.core.Observable; // Changed
 
 public class MealLocalDataSourceImpl implements MealLocalDataSource {
 
@@ -30,7 +33,6 @@ public class MealLocalDataSourceImpl implements MealLocalDataSource {
         return instance;
     }
 
-    // --- FAVORITES ---
     @Override
     public Completable insertFavorite(Meal meal) {
         return dao.insertMeal(meal);
@@ -42,7 +44,7 @@ public class MealLocalDataSourceImpl implements MealLocalDataSource {
     }
 
     @Override
-    public Single<List<Meal>> getFavorites() {
+    public Observable<List<Meal>> getFavorites() {
         return dao.getAllFavorites();
     }
 
@@ -57,7 +59,7 @@ public class MealLocalDataSourceImpl implements MealLocalDataSource {
     }
 
     @Override
-    public Single<List<MealPlan>> getAllPlans() {
+    public Observable<List<MealPlan>> getAllPlans() {
         return planDao.getAllPlannedMeals();
     }
 }

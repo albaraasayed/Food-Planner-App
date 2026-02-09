@@ -8,16 +8,14 @@ import androidx.room.Query;
 import com.example.foodplannerapp.model.Meal;
 import java.util.List;
 import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.core.Observable;
 
 @Dao
 public interface MealDAO {
     @Query("SELECT * FROM meals_table")
-    Single<List<Meal>> getAllFavorites();
-
+    Observable<List<Meal>> getAllFavorites();
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     Completable insertMeal(Meal meal);
-
     @Delete
     Completable deleteMeal(Meal meal);
 }

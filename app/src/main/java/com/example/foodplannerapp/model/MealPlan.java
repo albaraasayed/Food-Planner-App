@@ -1,41 +1,41 @@
 package com.example.foodplannerapp.model;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
-import androidx.room.Ignore; // Import Ignore
 import androidx.room.PrimaryKey;
 
 import java.io.Serializable;
 
 @Entity(tableName = "meal_plan_table")
 public class MealPlan implements Serializable {
-    @PrimaryKey(autoGenerate = true)
-    private int id;
+    @PrimaryKey
+    @NonNull
+    private String id;
 
     private String mealId;
     private String mealName;
     private String mealThumb;
     private String mealArea;
-    private String day; // Changed 'date' to 'day' to match your Fragment code
+    private String day;
 
-    // --- FIX 1: Add Empty Constructor (Required for Room & new MealPlan()) ---
     public MealPlan() {
     }
 
-    // --- FIX 2: Add @Ignore to the convenience constructor ---
-    @Ignore
-    public MealPlan(String mealId, String mealName, String mealThumb, String mealArea, String day) {
+    public MealPlan(String day, String mealId, String mealName, String mealThumb, String mealArea) {
+        this.day = day;
         this.mealId = mealId;
+        this.id = day + "_" + mealId;
         this.mealName = mealName;
         this.mealThumb = mealThumb;
         this.mealArea = mealArea;
-        this.day = day;
     }
 
-    public int getId() {
+    @NonNull
+    public String getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(@NonNull String id) {
         this.id = id;
     }
 
@@ -45,6 +45,16 @@ public class MealPlan implements Serializable {
 
     public void setMealId(String mealId) {
         this.mealId = mealId;
+        if (this.day != null) this.id = this.day + "_" + mealId;
+    }
+
+    public String getDay() {
+        return day;
+    }
+
+    public void setDay(String day) {
+        this.day = day;
+        if (this.mealId != null) this.id = day + "_" + this.mealId;
     }
 
     public String getMealName() {
@@ -69,13 +79,5 @@ public class MealPlan implements Serializable {
 
     public void setMealArea(String mealArea) {
         this.mealArea = mealArea;
-    }
-
-    public String getDay() {
-        return day;
-    }
-
-    public void setDay(String day) {
-        this.day = day;
     }
 }
