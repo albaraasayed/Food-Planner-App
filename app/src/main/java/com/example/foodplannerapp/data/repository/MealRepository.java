@@ -8,7 +8,7 @@ import com.example.foodplannerapp.model.MealPlan;
 import com.example.foodplannerapp.model.MealResponse;
 import java.util.List;
 import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Observable; // Import Observable
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 
 public interface MealRepository {

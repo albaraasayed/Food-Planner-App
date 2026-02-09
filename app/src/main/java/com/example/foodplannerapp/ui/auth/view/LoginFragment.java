@@ -38,7 +38,7 @@ public class LoginFragment extends Fragment {
     private FirebaseAuth mAuth;
     private TextInputEditText etEmail, etPassword;
     private CredentialManager credentialManager;
-    private MealRepositoryImpl repository; // 1. Add Repository
+    private MealRepositoryImpl repository;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -53,7 +53,6 @@ public class LoginFragment extends Fragment {
         mAuth = FirebaseAuth.getInstance();
         credentialManager = CredentialManager.create(requireContext());
 
-        // 2. Initialize Repository
         repository = MealRepositoryImpl.getInstance(
                 MealRemoteDataSourceImpl.getInstance(RetrofitClient.getService()),
                 MealLocalDataSourceImpl.getInstance(getContext())
@@ -66,7 +65,6 @@ public class LoginFragment extends Fragment {
         Button btnSkip = view.findViewById(R.id.btnSkip);
         TextView tvSignUp = view.findViewById(R.id.tvSignUp);
 
-        // --- Email Login ---
         btnLogin.setOnClickListener(v -> {
             String email = (etEmail.getText() != null) ? etEmail.getText().toString().trim() : "";
             String password = (etPassword.getText() != null) ? etPassword.getText().toString().trim() : "";
@@ -78,18 +76,15 @@ public class LoginFragment extends Fragment {
             }
         });
 
-        // --- Google Login ---
         if (btnGoogle != null) {
             btnGoogle.setOnClickListener(v -> signInWithGoogle());
         }
 
-        // --- Guest Mode (Skip) ---
         if (btnSkip != null) {
             btnSkip.setOnClickListener(v ->
                     Navigation.findNavController(v).navigate(R.id.action_authScreen_to_homeScreen));
         }
 
-        // --- Sign Up Navigation ---
         tvSignUp.setOnClickListener(v ->
                 Navigation.findNavController(v).navigate(R.id.action_authScreen_to_registerFragment));
     }
@@ -98,7 +93,6 @@ public class LoginFragment extends Fragment {
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
-                        // 3. TRIGGER SYNC HERE
                         String uid = mAuth.getCurrentUser().getUid();
                         repository.syncFromFirebase(uid);
 
@@ -163,10 +157,8 @@ public class LoginFragment extends Fragment {
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(requireActivity(), task -> {
                     if (task.isSuccessful()) {
-                        // 4. TRIGGER SYNC HERE TOO
                         String uid = mAuth.getCurrentUser().getUid();
                         repository.syncFromFirebase(uid);
-
                         if (getView() != null) {
                             Navigation.findNavController(getView()).navigate(R.id.action_authScreen_to_homeScreen);
                         }

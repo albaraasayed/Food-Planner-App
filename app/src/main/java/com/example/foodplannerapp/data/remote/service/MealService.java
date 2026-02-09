@@ -4,12 +4,12 @@ import com.example.foodplannerapp.model.CategoryResponse;
 import com.example.foodplannerapp.model.CountryResponse;
 import com.example.foodplannerapp.model.IngredientResponse;
 import com.example.foodplannerapp.model.MealResponse;
+
 import io.reactivex.rxjava3.core.Single;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
 
 public interface MealService {
-
     @GET("random.php")
     Single<MealResponse> getRandomMeal();
 
@@ -33,6 +33,7 @@ public interface MealService {
 
     @GET("filter.php")
     Single<MealResponse> filterByIngredient(@Query("i") String ingredient);
+
     @GET("lookup.php")
     Single<MealResponse> getMealDetails(@Query("i") String id);
 }

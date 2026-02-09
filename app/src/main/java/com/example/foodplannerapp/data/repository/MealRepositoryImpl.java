@@ -156,7 +156,6 @@ public class MealRepositoryImpl implements MealRepository {
         if (uid == null || uid.equals(currentSyncUid)) return;
         currentSyncUid = uid;
 
-        // 1. Favorites Listener
         mDatabase.child("users").child(uid).child("favorites").addChildEventListener(new ChildEventListener() {
             @Override
             public void onChildAdded(@NonNull DataSnapshot snapshot, @Nullable String previousChildName) {

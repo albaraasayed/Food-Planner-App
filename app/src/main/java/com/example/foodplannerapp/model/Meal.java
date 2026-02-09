@@ -32,7 +32,6 @@ public class Meal implements Serializable {
     @SerializedName("strYoutube")
     private String youtubeUrl;
 
-    // --- NEW: Ingredient Fields (Required for Ingredients to show) ---
     public String strIngredient1, strIngredient2, strIngredient3, strIngredient4, strIngredient5,
             strIngredient6, strIngredient7, strIngredient8, strIngredient9, strIngredient10,
             strIngredient11, strIngredient12, strIngredient13, strIngredient14, strIngredient15,
@@ -43,10 +42,8 @@ public class Meal implements Serializable {
             strMeasure11, strMeasure12, strMeasure13, strMeasure14, strMeasure15,
             strMeasure16, strMeasure17, strMeasure18, strMeasure19, strMeasure20;
 
-    // Default Constructor
     public Meal() {}
 
-    // --- Getters for Ingredients ---
     public String getStrIngredient1() { return strIngredient1; }
     public String getStrIngredient2() { return strIngredient2; }
     public String getStrIngredient3() { return strIngredient3; }
@@ -89,7 +86,6 @@ public class Meal implements Serializable {
     public String getStrMeasure19() { return strMeasure19; }
     public String getStrMeasure20() { return strMeasure20; }
 
-    // --- Standard Getters & Setters ---
     public void setId(@NonNull String id) { this.id = id; }
     public String getId() { return id; }
 
