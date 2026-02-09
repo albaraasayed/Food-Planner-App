@@ -8,6 +8,7 @@ import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
@@ -21,8 +22,6 @@ public class MainActivity extends AppCompatActivity {
     private NavController navController;
     private BottomNavigationView bottomNavigationView;
     private FirebaseAuth mAuth;
-    private static final String TAG = "MainActivity";
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,12 +46,12 @@ public class MainActivity extends AppCompatActivity {
                 if (isGuest) {
                     if (id == R.id.homeFragment || id == R.id.searchFragment) {
                         if (!isOnline) {
-                            AppAlert.showOfflineAlert(navController);
+                            AppAlert.showOfflineAlert(MainActivity.this);
                             return false;
                         }
                         return NavigationUI.onNavDestinationSelected(item, navController);
                     } else {
-                        AppAlert.showLoginRequiredDialog(navController);
+                        AppAlert.showLoginRequiredDialog(MainActivity.this, navController);
                         return false;
                     }
                 } else {
@@ -62,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
                         if (id == R.id.favoritesFragment || id == R.id.plannerFragment) {
                             return NavigationUI.onNavDestinationSelected(item, navController);
                         } else {
-                            AppAlert.showOfflineAlert(navController);
+                            AppAlert.showOfflineAlert(MainActivity.this);
                             return false;
                         }
                     }
@@ -98,6 +97,4 @@ public class MainActivity extends AppCompatActivity {
             return activeNetworkInfo != null && activeNetworkInfo.isConnected();
         }
     }
-
-
 }

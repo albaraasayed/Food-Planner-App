@@ -11,7 +11,7 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 
 public interface MealRepository {
-    // --- Remote ---
+
     Single<MealResponse> getRandomMeal();
     Single<CategoryResponse> getCategories();
     Single<CountryResponse> getCountries();
@@ -22,16 +22,15 @@ public interface MealRepository {
     Single<MealResponse> filterByIngredient(String ingredient);
     Single<MealResponse> getMealDetails(String id);
 
-    // --- Favorites ---
+
     Completable addToFavorites(Meal meal);
     Completable removeFromFavorites(Meal meal);
     Single<List<Meal>> getStoredFavorites();
 
-    // --- Planner ---
+
     Completable addMealToPlan(MealPlan mealPlan);
     Completable removeMealFromPlan(MealPlan mealPlan);
     Single<List<MealPlan>> getPlan();
 
-    // --- NEW: Sync Data ---
     void syncFromFirebase(String uid);
 }
