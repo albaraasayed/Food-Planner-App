@@ -19,6 +19,10 @@ import androidx.fragment.app.Fragment;
 import androidx.navigation.Navigation;
 
 import com.example.foodplannerapp.R;
+import com.example.foodplannerapp.data.config.RetrofitClient;
+import com.example.foodplannerapp.data.local.local_datasource_implementation.MealLocalDataSourceImpl;
+import com.example.foodplannerapp.data.remote.remote_datasource_implementation.MealRemoteDataSourceImpl;
+import com.example.foodplannerapp.data.repository.MealRepositoryImpl;
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import com.google.android.material.textfield.TextInputEditText;
@@ -34,6 +38,7 @@ public class AuthScreen extends Fragment {
     private FirebaseAuth mAuth;
     private TextInputEditText etEmail, etPassword;
     private CredentialManager credentialManager;
+    private MealRepositoryImpl repository; // 1. Add Repository
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -48,11 +53,17 @@ public class AuthScreen extends Fragment {
         mAuth = FirebaseAuth.getInstance();
         credentialManager = CredentialManager.create(requireContext());
 
+        // 2. Initialize Repository
+        repository = MealRepositoryImpl.getInstance(
+                MealRemoteDataSourceImpl.getInstance(RetrofitClient.getService()),
+                MealLocalDataSourceImpl.getInstance(getContext())
+        );
+
         etEmail = view.findViewById(R.id.etLoginEmail);
         etPassword = view.findViewById(R.id.etLoginPassword);
         Button btnLogin = view.findViewById(R.id.btnLogin);
         Button btnGoogle = view.findViewById(R.id.btnGoogle);
-        Button btnSkip = view.findViewById(R.id.btnSkip); // Defined ONCE here
+        Button btnSkip = view.findViewById(R.id.btnSkip);
         TextView tvSignUp = view.findViewById(R.id.tvSignUp);
 
         // --- Email Login ---
@@ -73,11 +84,9 @@ public class AuthScreen extends Fragment {
         }
 
         // --- Guest Mode (Skip) ---
-        // Fix: Use the single definition of btnSkip from above
         if (btnSkip != null) {
             btnSkip.setOnClickListener(v ->
-                    // Navigate to PLANNER (Guest Mode), not Home
-                    Navigation.findNavController(v).navigate(R.id.action_authScreen_to_plannerFragment));
+                    Navigation.findNavController(v).navigate(R.id.action_authScreen_to_homeScreen));
         }
 
         // --- Sign Up Navigation ---
@@ -89,27 +98,28 @@ public class AuthScreen extends Fragment {
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(task -> {
                     if (task.isSuccessful()) {
+                        // 3. TRIGGER SYNC HERE
+                        String uid = mAuth.getCurrentUser().getUid();
+                        repository.syncFromFirebase(uid);
+
                         Navigation.findNavController(view).navigate(R.id.action_authScreen_to_homeScreen);
                     } else {
-                        Toast.makeText(getContext(), "Auth Failed: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getContext(), "Authentication Failed. Please check your credentials.", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
     private void signInWithGoogle() {
-        // 1. Setup the Google ID Option
         GetGoogleIdOption googleIdOption = new GetGoogleIdOption.Builder()
-                .setFilterByAuthorizedAccounts(false) // Allow user to pick any account
+                .setFilterByAuthorizedAccounts(false)
                 .setServerClientId(getString(R.string.default_web_client_id))
-                .setAutoSelectEnabled(false) // <--- CHANGE THIS TO FALSE
+                .setAutoSelectEnabled(false)
                 .build();
 
-        // 2. Create the Request
         GetCredentialRequest request = new GetCredentialRequest.Builder()
                 .addCredentialOption(googleIdOption)
                 .build();
 
-        // 3. Launch Credential Manager
         Executor executor = Executors.newSingleThreadExecutor();
 
         credentialManager.getCredentialAsync(
@@ -127,7 +137,7 @@ public class AuthScreen extends Fragment {
                     public void onError(androidx.credentials.exceptions.GetCredentialException e) {
                         Log.e("Auth", "Error: " + e.getMessage());
                         requireActivity().runOnUiThread(() ->
-                                Toast.makeText(getContext(), "Sign in failed: " + e.getMessage(), Toast.LENGTH_SHORT).show()
+                                Toast.makeText(getContext(), "Sign in failed.", Toast.LENGTH_SHORT).show()
                         );
                     }
                 }
@@ -139,17 +149,12 @@ public class AuthScreen extends Fragment {
 
         if (credential.getType().equals(GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL)) {
             try {
-                // Extract the ID Token
                 GoogleIdTokenCredential googleIdToken = GoogleIdTokenCredential.createFrom(credential.getData());
                 String idToken = googleIdToken.getIdToken();
-
-                // Authenticate with Firebase
                 firebaseAuthWithGoogle(idToken);
             } catch (Exception e) {
                 Log.e("Auth", "Invalid Google ID Token", e);
             }
-        } else {
-            Log.e("Auth", "Unexpected credential type");
         }
     }
 
@@ -158,6 +163,10 @@ public class AuthScreen extends Fragment {
         mAuth.signInWithCredential(credential)
                 .addOnCompleteListener(requireActivity(), task -> {
                     if (task.isSuccessful()) {
+                        // 4. TRIGGER SYNC HERE TOO
+                        String uid = mAuth.getCurrentUser().getUid();
+                        repository.syncFromFirebase(uid);
+
                         if (getView() != null) {
                             Navigation.findNavController(getView()).navigate(R.id.action_authScreen_to_homeScreen);
                         }

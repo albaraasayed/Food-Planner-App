@@ -181,8 +181,8 @@ public class MealDetailsFragment extends Fragment {
                 .subscribe(
                         () -> Toast.makeText(getContext(), "Added to " + day, Toast.LENGTH_SHORT).show(),
                         error -> {
-                            Toast.makeText(getContext(), "Error: " + error.getMessage(), Toast.LENGTH_SHORT).show();
                             Log.e("Planner", "Error adding plan", error);
+                            Toast.makeText(getContext(), "Failed to save meal plan", Toast.LENGTH_SHORT).show();
                         }
                 );
     }
@@ -205,6 +205,7 @@ public class MealDetailsFragment extends Fragment {
                             updateFavoriteIcon();
                         },
                         error -> {
+                            Log.e("FavStatus", "Error", error);
                         }
                 );
     }
@@ -222,7 +223,9 @@ public class MealDetailsFragment extends Fragment {
                                 updateFavoriteIcon();
                                 Toast.makeText(getContext(), "Removed from Favorites", Toast.LENGTH_SHORT).show();
                             },
-                            error -> Toast.makeText(getContext(), "Error removing", Toast.LENGTH_SHORT).show()
+                            error -> {
+                                Log.e("Error", "toggleFavorite: ");
+                                Toast.makeText(getContext(), "Error removing", Toast.LENGTH_SHORT).show();}
                     );
         } else {
             repository.addToFavorites(currentMeal)

@@ -1,11 +1,15 @@
 package com.example.foodplannerapp.ui.planner;
 
+import android.util.Log; // Import Log
+
 import com.example.foodplannerapp.data.repository.MealRepositoryImpl;
 import com.example.foodplannerapp.model.MealPlan;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
@@ -24,7 +28,6 @@ public class PlannerPresenter {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(
                         meals -> {
-                            // Group List by Date
                             Map<String, List<MealPlan>> grouped = new HashMap<>();
                             for (MealPlan m : meals) {
                                 if (!grouped.containsKey(m.getDay())) {
@@ -34,7 +37,11 @@ public class PlannerPresenter {
                             }
                             view.showPlan(grouped);
                         },
-                        error -> view.showError(error.getMessage())
+                        // CHANGED: Removed error.getMessage() from UI
+                        error -> {
+                            Log.e("PlannerPresenter", "Error loading plan", error);
+                            view.showError("Failed to load weekly plan");
+                        }
                 );
     }
 
@@ -42,6 +49,13 @@ public class PlannerPresenter {
         repository.removeMealFromPlan(meal)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(this::getPlannedMeals, error -> view.showError("Error deleting"));
+                .subscribe(
+                        this::getPlannedMeals,
+                        // CHANGED: Generic message
+                        error -> {
+                            Log.e("PlannerPresenter", "Error deleting meal", error);
+                            view.showError("Unable to delete meal");
+                        }
+                );
     }
 }

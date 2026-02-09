@@ -94,7 +94,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // --- UPDATED: Stronger Network Check ---
     private boolean isNetworkAvailable() {
         ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         if (connectivityManager == null) return false;
@@ -107,7 +106,6 @@ public class MainActivity extends AppCompatActivity {
                     capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
                     capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
         } else {
-            // Fallback for older Android versions
             android.net.NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
             return activeNetworkInfo != null && activeNetworkInfo.isConnected();
         }

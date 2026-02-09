@@ -4,7 +4,7 @@ import com.example.foodplannerapp.model.CategoryResponse;
 import com.example.foodplannerapp.model.CountryResponse;
 import com.example.foodplannerapp.model.IngredientResponse;
 import com.example.foodplannerapp.model.Meal;
-import com.example.foodplannerapp.model.MealPlan; // Import MealPlan
+import com.example.foodplannerapp.model.MealPlan;
 import com.example.foodplannerapp.model.MealResponse;
 import java.util.List;
 import io.reactivex.rxjava3.core.Completable;
@@ -26,7 +26,12 @@ public interface MealRepository {
     Completable addToFavorites(Meal meal);
     Completable removeFromFavorites(Meal meal);
     Single<List<Meal>> getStoredFavorites();
+
+    // --- Planner ---
     Completable addMealToPlan(MealPlan mealPlan);
     Completable removeMealFromPlan(MealPlan mealPlan);
     Single<List<MealPlan>> getPlan();
+
+    // --- NEW: Sync Data ---
+    void syncFromFirebase(String uid);
 }
